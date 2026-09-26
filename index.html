@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Geografis - STPM Santa Ursula Ende</title>
+    
+    <!-- Pustaka Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Pustaka Turf.js untuk komputasi spasial (menghitung titik tengah kecamatan) -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        /* Dasbor UI Panel bergaya modern / clean */
+        #ui-panel {
+            position: absolute; top: 20px; left: 20px; width: 320px;
+            background: rgba(24, 24, 27, 0.85); backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            color: #e4e4e7; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1; max-height: 85vh; overflow-y: auto;
+        }
+        
+        /* Kustomisasi scrollbar agar rapi */
+        #ui-panel::-webkit-scrollbar { width: 6px; }
+        #ui-panel::-webkit-scrollbar-thumb { background: #52525b; border-radius: 4px; }
+
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #3f3f46; padding-bottom: 15px; color: #f4f4f5; }
+        
+        .kecamatan-item {
+            padding: 12px; margin-bottom: 8px; background: rgba(63, 63, 70, 0.4);
+            border-radius: 6px; cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; font-size: 0.9rem;
+            border-left: 4px solid transparent;
+        }
+        .kecamatan-item:hover { background: rgba(63, 63, 70, 0.8); border-left-color: #3b82f6; transform: translateX(4px); }
+        
+        .nav-hint { font-size: 0.8rem; color: #a1a1aa; margin-bottom: 15px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-panel">
+        <h2>Peta Infrastruktur Ende</h2>
+        <span class="nav-hint">Klik kanan & seret untuk memutar kamera (Mode Drone). Klik area untuk fokus.</span>
+        <div id="legend-container">
+            <div id="loading-text">Memuat batas administrasi...</div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // 1. OTENTIKASI & INISIALISASI PETA
+        // GANTI STRING DI BAWAH DENGAN TOKEN MAPBOX ANDA
+        mapboxgl.accessToken = 'pk.eyJ1Ijoib3pub3ZlbCIsImEiOiJjbXVocDg0eTgwYTV6MnhvZHR3eml5MzhxIn0.YRY8_U6ir9nL6BrEi6IbLw';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11', // Tema abu-abu/gelap elegan
+            center: [121.662, -8.840], // Titik tengah Kota Ende (Longitude, Latitude)
+            zoom: 13.5,
+            pitch: 60, // Sudut kemiringan kamera (Mode Drone 3D)
+            bearing: -20, // Putaran arah mata angin
+            antialias: true
+        });
+
+        // Kontrol navigasi bawaan (Zoom, Kompas) di sudut kanan
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // 2. KETIKA PETA SELESAI DIMUAT (Event Listener)
+        map.on('load', async () => {
+            
+            // --- A. Menambahkan Gedung 3D Bawaan Mapbox ---
+            const layers = map.getStyle().layers;
+            const labelLayerId = layers.find(
+                (layer) => layer.type === 'symbol' && layer.layout['text-field']
+            ).id; // Menyisipkan gedung di bawah teks label jalan
+
+            map.addLayer(
+                {
+                    'id': 'add-3d-buildings',
+                    'source': 'composite',
+                    'source-layer': 'building',
+                    'filter': ['==', 'extrude', 'true'],
+                    'type': 'fill-extrusion',
+                    'minzoom': 14,
+                    'paint': {
+                        'fill-extrusion-color': '#52525b', // Warna gedung abu-abu netral
+                        'fill-extrusion-height': ['get', 'height'],
+                        'fill-extrusion-base': ['get', 'min_height'],
+                        'fill-extrusion-opacity': 0.8
+                    }
+                },
+                labelLayerId
+            );
+
+            // --- B. Memuat File GeoJSON Kabupaten Ende ---
+            try {
+                const respon = await fetch('gadm41_ende.json');
+                const dataGeoJSON = await respon.json();
+
+                // Daftarkan data sebagai sumber peta (source)
+                map.addSource('ende-boundaries', {
+                    'type': 'geojson',
+                    'data': dataGeoJSON
+                });
+
+                // Tambahkan lapisan untuk batas garis (Outline)
+                map.addLayer({
+                    'id': 'ende-lines',
+                    'type': 'line',
+                    'source': 'ende-boundaries',
+                    'paint': {
+                        'line-color': '#3b82f6', // Biru teknikal
+                        'line-width': 2,
+                        'line-opacity': 0.6
+                    }
+                });
+
+                // Tambahkan lapisan area (Fill) transparan agar infrastruktur di bawahnya tetap terlihat
+                map.addLayer({
+                    'id': 'ende-fills',
+                    'type': 'fill',
+                    'source': 'ende-boundaries',
+                    'paint': {
+                        'fill-color': '#3b82f6',
+                        'fill-opacity': [
+                            'case',
+                            ['boolean', ['feature-state', 'hover'], false],
+                            0.2, // Transparansi sedikit menebal saat di-hover
+                            0.0  // 0.0 (tembus pandang murni) saat tidak di-hover
+                        ]
+                    }
+                });
+
+                // --- C. Membangun UI Panel & Logika Fly-To (Mode Drone) ---
+                const legendContainer = document.getElementById('legend-container');
+                document.getElementById('loading-text').style.display = 'none';
+
+                let hoveredStateId = null;
+
+                dataGeoJSON.features.forEach((feature, index) => {
+                    // Beri ID unik ke setiap fitur untuk efek hover
+                    feature.id = index;
+                    const namaKecamatan = feature.properties.NAME_3;
+
+                    // Buat elemen daftar di dasbor kiri
+                    const divItem = document.createElement('div');
+                    divItem.className = 'kecamatan-item';
+                    divItem.innerHTML = `<strong>${namaKecamatan}</strong>`;
+                    
+                    // Aksi klik: Terbang ke kecamatan
+                    divItem.addEventListener('click', () => {
+                        // Gunakan Turf.js untuk mencari titik tengah poligon
+                        const titikTengah = turf.centroid(feature);
+                        const koordinatTengah = titikTengah.geometry.coordinates;
+
+                        // Animasi kamera sinematik ala Drone
+                        map.flyTo({
+                            center: koordinatTengah,
+                            zoom: 14,
+                            pitch: 65,
+                            bearing: Math.random() * 90 - 45, // Rotasi sedikit acak agar dinamis
+                            essential: true,
+                            duration: 3000 // Durasi terbang (3 detik)
+                        });
+                    });
+
+                    legendContainer.appendChild(divItem);
+                });
+
+                // --- D. Interaksi Hover Mouse pada Peta ---
+                map.on('mousemove', 'ende-fills', (e) => {
+                    if (e.features.length > 0) {
+                        if (hoveredStateId !== null) {
+                            map.setFeatureState(
+                                { source: 'ende-boundaries', id: hoveredStateId },
+                                { hover: false }
+                            );
+                        }
+                        hoveredStateId = e.features[0].id;
+                        map.setFeatureState(
+                            { source: 'ende-boundaries', id: hoveredStateId },
+                            { hover: true }
+                        );
+                        map.getCanvas().style.cursor = 'pointer';
+                    }
+                });
+
+                map.on('mouseleave', 'ende-fills', () => {
+                    if (hoveredStateId !== null) {
+                        map.setFeatureState(
+                            { source: 'ende-boundaries', id: hoveredStateId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredStateId = null;
+                    map.getCanvas().style.cursor = '';
+                });
+
+            } catch (error) {
+                console.error('Gagal memuat GeoJSON', error);
+                document.getElementById('loading-text').innerText = 'Gagal memuat data GeoJSON.';
+            }
+        });
+    </script>
+</body>
+</html>
