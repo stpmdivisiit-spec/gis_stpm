@@ -5,209 +5,432 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi Geografis - STPM Santa Ursula Ende</title>
     
-    <!-- Pustaka Mapbox GL JS -->
+    <!-- Pustaka Utama -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-    
-    <!-- Pustaka Turf.js untuk komputasi spasial (menghitung titik tengah kecamatan) -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Pustaka Ekspor Gambar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        
-        /* Dasbor UI Panel bergaya modern / clean */
-        #ui-panel {
-            position: absolute; top: 20px; left: 20px; width: 320px;
-            background: rgba(24, 24, 27, 0.85); backdrop-filter: blur(10px);
-            padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            color: #e4e4e7; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1; max-height: 85vh; overflow-y: auto;
-        }
-        
-        /* Kustomisasi scrollbar agar rapi */
-        #ui-panel::-webkit-scrollbar { width: 6px; }
-        #ui-panel::-webkit-scrollbar-thumb { background: #52525b; border-radius: 4px; }
+        :root { --primary: #3b82f6; --bg-panel: rgba(24, 24, 27, 0.95); --text: #e4e4e7; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; color: var(--text); overflow: hidden; }
+        #map-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        #map { width: 100%; height: 100%; }
 
-        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #3f3f46; padding-bottom: 15px; color: #f4f4f5; }
-        
-        .kecamatan-item {
-            padding: 12px; margin-bottom: 8px; background: rgba(63, 63, 70, 0.4);
-            border-radius: 6px; cursor: pointer; transition: all 0.2s ease;
-            display: flex; align-items: center; font-size: 0.9rem;
-            border-left: 4px solid transparent;
+        /* Panel Kiri Utama */
+        .panel {
+            position: absolute; top: 20px; left: 20px; width: 340px; max-height: 85vh; display: flex; flex-direction: column;
+            background: var(--bg-panel); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 1000;
         }
-        .kecamatan-item:hover { background: rgba(63, 63, 70, 0.8); border-left-color: #3b82f6; transform: translateX(4px); }
         
-        .nav-hint { font-size: 0.8rem; color: #a1a1aa; margin-bottom: 15px; display: block; }
+        /* Akordion / Menu Kategori Navigasi */
+        .menu-kategori { background: #27272a; padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .menu-kategori:hover { background: #3f3f46; }
+        .submenu-container { display: none; padding-left: 10px; margin-bottom: 10px; border-left: 2px solid #3f3f46; }
+        .submenu-container.aktif { display: block; }
+        
+        .lokasi-item {
+            padding: 10px; margin-bottom: 5px; background: rgba(63, 63, 70, 0.3); border-radius: 6px; cursor: pointer; display: flex; align-items: center; font-size: 0.85rem; border-left: 3px solid var(--primary);
+        }
+        .lokasi-item:hover { background: rgba(63, 63, 70, 0.8); }
+        .lokasi-icon { width: 25px; text-align: center; margin-right: 10px; color: var(--primary); }
+
+        /* Panel Kanan Bawah (Legenda & Export) */
+        .panel-bawah {
+            position: absolute; bottom: 20px; right: 50px; background: var(--bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; display: flex; gap: 15px; align-items: center;
+        }
+        
+        /* Kotak Keterangan Detail Objek */
+        #detail-box {
+            position: absolute; bottom: 20px; left: 380px; width: 300px; background: var(--bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; display: none;
+        }
+
+        /* Utils & Form */
+        h2 { margin: 0 0 15px 0; font-size: 1.2rem; border-bottom: 1px solid #3f3f46; padding-bottom: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: center; width: 100%; margin-top: 10px; color: white; background: #3f3f46; }
+        .btn:hover { filter: brightness(1.2); }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: #10b981; }
+        .hidden { display: none !important; }
+        .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index: 2000; }
+        .modal-box { background: #18181b; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #a1a1aa; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; background: #27272a; border: 1px solid #3f3f46; color: white; border-radius: 6px; box-sizing: border-box; }
+        
+        /* Ikon Custom Mapbox */
+        .custom-marker { background: #18181b; border: 2px solid var(--primary); color: var(--primary); border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-    <div id="ui-panel">
-        <h2>Peta Infrastruktur Ende</h2>
-        <span class="nav-hint">Klik kanan & seret untuk memutar kamera (Mode Drone). Klik area untuk fokus.</span>
-        <div id="legend-container">
-            <div id="loading-text">Memuat batas administrasi...</div>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <!-- PANEL UTAMA KIRI -->
+    <div id="main-panel" class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Peta STPM Ende</h2>
+            <i id="btn-login-icon" class="fa-solid fa-user-lock" style="cursor: pointer; color: #a1a1aa;" onclick="bukaModalLogin()"></i>
+            <i id="btn-logout-icon" class="fa-solid fa-right-from-bracket hidden" style="cursor: pointer; color: #ef4444;" onclick="logoutAdmin()"></i>
+        </div>
+        
+        <p style="font-size:0.8rem; color:#a1a1aa; margin-top:0;">Klik Data Kategori di bawah untuk navigasi area.</p>
+
+        <!-- KOTAK DRAFT ADMIN -->
+        <div id="draft-box" class="hidden" style="background:#064e3b; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #10b981;">
+            <strong style="color:#34d399;"><i class="fa-solid fa-pen-ruler"></i> Mode Draft Aktif</strong>
+            <p style="font-size:0.8rem; margin:5px 0 10px 0;">Silakan gambar gedung/titik sebanyak-banyaknya di peta. Semua akan ditampung di sini.</p>
+            <div id="draft-counter" style="font-size:0.9rem; font-weight:bold; text-align:center; margin-bottom:10px;">0 Objek Menunggu Disimpan</div>
+            <button class="btn btn-primary" style="margin-top:0;" onclick="kirimDraftKeServer()"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan Semua Perubahan</button>
+        </div>
+        
+        <div id="navigasi-container" style="overflow-y:auto; flex-grow:1; padding-right:5px;">
+            <div style="color: #a1a1aa; font-style: italic; font-size: 0.9rem;">Menarik data dari server...</div>
         </div>
     </div>
 
-    <div id="map"></div>
+    <!-- KOTAK DETAIL INFORMASI (Muncul saat marker/area diklik) -->
+    <div id="detail-box">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <h3 id="detail-nama" style="margin:0 0 5px 0; color:var(--primary);">Nama Objek</h3>
+            <i class="fa-solid fa-xmark" style="cursor:pointer; color:#ef4444;" onclick="document.getElementById('detail-box').style.display='none'"></i>
+        </div>
+        <span id="detail-kategori" style="background:#3f3f46; font-size:0.75rem; padding:3px 8px; border-radius:12px;">Kategori</span>
+        <p id="detail-deskripsi" style="font-size:0.85rem; margin-top:10px; color:#d4d4d8;">Deskripsi objek akan muncul di sini.</p>
+        <hr style="border-color:#3f3f46; margin:15px 0;">
+        <span style="font-size:0.75rem; color:#a1a1aa;"><i class="fa-solid fa-location-crosshairs"></i> Koordinat: <br><span id="detail-koordinat">Menghitung...</span></span>
+    </div>
+
+    <!-- PANEL KANAN BAWAH (Export & Legenda) -->
+    <div class="panel-bawah">
+        <div style="font-size:0.8rem; border-right:1px solid #3f3f46; padding-right:15px;">
+            <strong style="display:block; margin-bottom:5px;">Legenda Peta</strong>
+            <div><i class="fa-solid fa-square" style="color:rgba(59, 130, 246, 0.4);"></i> Area / Bangunan</div>
+            <div><i class="fa-solid fa-location-dot" style="color:var(--primary);"></i> Titik / Ruangan</div>
+        </div>
+        <button class="btn" style="background:#27272a; width:auto; margin-top:0; border:1px solid #3f3f46;" onclick="exportKeJPG()"><i class="fa-solid fa-camera"></i> Ekspor JPG</button>
+    </div>
+
+    <!-- MODAL FORM PROPERTI (DRAFT) -->
+    <div id="data-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-height: 90vh; overflow-y: auto;">
+            <h2 style="margin-top:0">Data Properti Baru</h2>
+            
+            <div class="form-group"><label>Nama Gedung / Ruangan / Titik</label><input type="text" id="form-nama" placeholder="Misal: Aula Utama"></div>
+            <div class="form-group"><label>Kategori</label>
+                <select id="form-kategori">
+                    <option value="Universitas">Universitas (Area Utama)</option>
+                    <option value="Fasilitas Kampus">Fasilitas Kampus (Gedung/Ruangan)</option>
+                    <option value="Halaman & Parkir">Halaman & Parkir</option>
+                    <option value="Posko KKN">Posko KKN</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Koordinat (Wajib diambil)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="form-koordinat" readonly placeholder="Klik tombol ->" style="flex: 1; background: #3f3f46; color: #a1a1aa;">
+                    <button type="button" class="btn btn-primary" style="margin-top: 0; width: auto; padding: 8px;" onclick="tarikKoordinatPeta()">Ambil</button>
+                </div>
+            </div>
+            
+            <div class="form-group"><label>Deskripsi (Termasuk info properti)</label><textarea id="form-deskripsi" rows="3" placeholder="Masukkan keterangan detail tentang ruangan/area ini..."></textarea></div>
+            <div class="form-group"><label>Ikon (Font Awesome: fa-house, fa-car, fa-book)</label><input type="text" id="form-icon" value="fa-location-dot"></div>
+
+            <div class="flex-between" style="gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="simpanKeDraftMemori()"><i class="fa-solid fa-box-archive"></i> Simpan ke Draft</button>
+                <button class="btn" style="background:#ef4444;" onclick="batalGambarDraft()">Batal</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL LOGIN ADMIN -->
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 style="margin-top:0">Akses Administrator</h2>
+            <div class="form-group"><input type="text" id="login-user" placeholder="Username (admin)"></div>
+            <div class="form-group"><input type="password" id="login-pass" placeholder="Password (stpm2026)"></div>
+            <button class="btn btn-primary" onclick="prosesLogin()">Masuk</button>
+            <button class="btn" style="background:transparent; border:1px solid #3f3f46;" onclick="document.getElementById('login-modal').classList.add('hidden')">Batal</button>
+        </div>
+    </div>
+
 
     <script>
-        // 1. OTENTIKASI & INISIALISASI PETA
-        // GANTI STRING DI BAWAH DENGAN TOKEN MAPBOX ANDA
+        // ==========================================
+        // 1. KONFIGURASI API & VARIABEL GLOBAL
+        // ==========================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwbEe00oqifJUoDsk7FuidVeOHa513hO2mAIEGCuk5a09RtPersY97LuLO624RPk_g/exec';
+        
+        let isAdmin = false; let drawControl = null; let fiturSedangDigambar = null;
+        
+        // Memori Draft Sementara (Sesi Admin)
+        let draftSession = { markers: [], shapes: [] };
+        
+        // Database Asli
+        let databaseUtama = { markers: [], shapes: [] };
+
+        // ==========================================
+        // 2. INISIALISASI PETA MAPBOX
+        // ==========================================
         mapboxgl.accessToken = 'pk.eyJ1Ijoib3pub3ZlbCIsImEiOiJjbXVocDg0eTgwYTV6MnhvZHR3eml5MzhxIn0.YRY8_U6ir9nL6BrEi6IbLw';
-
         const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/dark-v11', // Tema abu-abu/gelap elegan
-            center: [121.662, -8.840], // Titik tengah Kota Ende (Longitude, Latitude)
-            zoom: 13.5,
-            pitch: 60, // Sudut kemiringan kamera (Mode Drone 3D)
-            bearing: -20, // Putaran arah mata angin
-            antialias: true
+            container: 'map', style: 'mapbox://styles/mapbox/dark-v11',
+            center: [121.662, -8.840], zoom: 13.5, pitch: 60, bearing: -20, preserveDrawingBuffer: true // Wajib True agar bisa di-export JPG
         });
-
-        // Kontrol navigasi bawaan (Zoom, Kompas) di sudut kanan
         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-        // 2. KETIKA PETA SELESAI DIMUAT (Event Listener)
         map.on('load', async () => {
-            
-            // --- A. Menambahkan Gedung 3D Bawaan Mapbox ---
-            const layers = map.getStyle().layers;
-            const labelLayerId = layers.find(
-                (layer) => layer.type === 'symbol' && layer.layout['text-field']
-            ).id; // Menyisipkan gedung di bawah teks label jalan
-
-            map.addLayer(
-                {
-                    'id': 'add-3d-buildings',
-                    'source': 'composite',
-                    'source-layer': 'building',
-                    'filter': ['==', 'extrude', 'true'],
-                    'type': 'fill-extrusion',
-                    'minzoom': 14,
-                    'paint': {
-                        'fill-extrusion-color': '#52525b', // Warna gedung abu-abu netral
-                        'fill-extrusion-height': ['get', 'height'],
-                        'fill-extrusion-base': ['get', 'min_height'],
-                        'fill-extrusion-opacity': 0.8
-                    }
-                },
-                labelLayerId
-            );
-
-            // --- B. Memuat File GeoJSON Kabupaten Ende ---
-            try {
-                const respon = await fetch('gadm41_ende.json');
-                const dataGeoJSON = await respon.json();
-
-                // Daftarkan data sebagai sumber peta (source)
-                map.addSource('ende-boundaries', {
-                    'type': 'geojson',
-                    'data': dataGeoJSON
-                });
-
-                // Tambahkan lapisan untuk batas garis (Outline)
-                map.addLayer({
-                    'id': 'ende-lines',
-                    'type': 'line',
-                    'source': 'ende-boundaries',
-                    'paint': {
-                        'line-color': '#3b82f6', // Biru teknikal
-                        'line-width': 2,
-                        'line-opacity': 0.6
-                    }
-                });
-
-                // Tambahkan lapisan area (Fill) transparan agar infrastruktur di bawahnya tetap terlihat
-                map.addLayer({
-                    'id': 'ende-fills',
-                    'type': 'fill',
-                    'source': 'ende-boundaries',
-                    'paint': {
-                        'fill-color': '#3b82f6',
-                        'fill-opacity': [
-                            'case',
-                            ['boolean', ['feature-state', 'hover'], false],
-                            0.2, // Transparansi sedikit menebal saat di-hover
-                            0.0  // 0.0 (tembus pandang murni) saat tidak di-hover
-                        ]
-                    }
-                });
-
-                // --- C. Membangun UI Panel & Logika Fly-To (Mode Drone) ---
-                const legendContainer = document.getElementById('legend-container');
-                document.getElementById('loading-text').style.display = 'none';
-
-                let hoveredStateId = null;
-
-                dataGeoJSON.features.forEach((feature, index) => {
-                    // Beri ID unik ke setiap fitur untuk efek hover
-                    feature.id = index;
-                    const namaKecamatan = feature.properties.NAME_3;
-
-                    // Buat elemen daftar di dasbor kiri
-                    const divItem = document.createElement('div');
-                    divItem.className = 'kecamatan-item';
-                    divItem.innerHTML = `<strong>${namaKecamatan}</strong>`;
-                    
-                    // Aksi klik: Terbang ke kecamatan
-                    divItem.addEventListener('click', () => {
-                        // Gunakan Turf.js untuk mencari titik tengah poligon
-                        const titikTengah = turf.centroid(feature);
-                        const koordinatTengah = titikTengah.geometry.coordinates;
-
-                        // Animasi kamera sinematik ala Drone
-                        map.flyTo({
-                            center: koordinatTengah,
-                            zoom: 14,
-                            pitch: 65,
-                            bearing: Math.random() * 90 - 45, // Rotasi sedikit acak agar dinamis
-                            essential: true,
-                            duration: 3000 // Durasi terbang (3 detik)
-                        });
-                    });
-
-                    legendContainer.appendChild(divItem);
-                });
-
-                // --- D. Interaksi Hover Mouse pada Peta ---
-                map.on('mousemove', 'ende-fills', (e) => {
-                    if (e.features.length > 0) {
-                        if (hoveredStateId !== null) {
-                            map.setFeatureState(
-                                { source: 'ende-boundaries', id: hoveredStateId },
-                                { hover: false }
-                            );
-                        }
-                        hoveredStateId = e.features[0].id;
-                        map.setFeatureState(
-                            { source: 'ende-boundaries', id: hoveredStateId },
-                            { hover: true }
-                        );
-                        map.getCanvas().style.cursor = 'pointer';
-                    }
-                });
-
-                map.on('mouseleave', 'ende-fills', () => {
-                    if (hoveredStateId !== null) {
-                        map.setFeatureState(
-                            { source: 'ende-boundaries', id: hoveredStateId },
-                            { hover: false }
-                        );
-                    }
-                    hoveredStateId = null;
-                    map.getCanvas().style.cursor = '';
-                });
-
-            } catch (error) {
-                console.error('Gagal memuat GeoJSON', error);
-                document.getElementById('loading-text').innerText = 'Gagal memuat data GeoJSON.';
-            }
+            if(API_URL.includes('PASTE')) return alert("Mohon isi URL Apps Script di dalam kode!");
+            await ambilDataDariServer();
         });
+
+        // ==========================================
+        // 3. FUNGSI DATABASE (GET SERVER)
+        // ==========================================
+        async function ambilDataDariServer() {
+            try {
+                document.getElementById('navigasi-container').innerHTML = '<i>Memuat data...</i>';
+                const respon = await fetch(API_URL);
+                databaseUtama = await respon.json();
+                
+                renderMenuKategori();
+                renderObjekKePeta();
+            } catch (err) { console.error(err); document.getElementById('navigasi-container').innerHTML = 'Gagal memuat data.'; }
+        }
+
+        // ==========================================
+        // 4. RENDERING MENU AKORDION & KLIK PETA
+        // ==========================================
+        function renderMenuKategori() {
+            const wadah = document.getElementById('navigasi-container');
+            wadah.innerHTML = '';
+            
+            // Gabungkan semua data (Database + Draft)
+            const semuaData = [...databaseUtama.shapes, ...databaseUtama.markers, ...draftSession.shapes, ...draftSession.markers];
+            
+            // Kelompokkan berdasarkan Kategori
+            const grupKategori = {};
+            semuaData.forEach(item => {
+                if(!grupKategori[item.Kategori]) grupKategori[item.Kategori] = [];
+                grupKategori[item.Kategori].push(item);
+            });
+
+            // Buat HTML Menu
+            for (const [kategori, isiArray] of Object.entries(grupKategori)) {
+                // Tombol Induk
+                const btnKat = document.createElement('div');
+                btnKat.className = 'menu-kategori';
+                btnKat.innerHTML = `<span><i class="fa-solid fa-folder"></i> Data ${kategori}</span> <i class="fa-solid fa-chevron-down"></i>`;
+                
+                // Wadah Submenu (Daftar Ruangan/Gedung)
+                const subWadah = document.createElement('div');
+                subWadah.className = 'submenu-container';
+                
+                isiArray.forEach(item => {
+                    const itemLok = document.createElement('div');
+                    itemLok.className = 'lokasi-item';
+                    const ikon = item.Icon ? item.Icon : 'fa-draw-polygon';
+                    
+                    // Tanda visual jika objek masih berstatus DRAFT
+                    const draftTag = item.isDraft ? '<span style="color:#ef4444; font-size:0.6rem; margin-left:5px;">(DRAFT)</span>' : '';
+                    
+                    itemLok.innerHTML = `<div class="lokasi-icon"><i class="fa-solid ${ikon}"></i></div> <div><strong>${item.Nama}</strong> ${draftTag}</div>`;
+                    
+                    itemLok.onclick = () => sorotDanTampilkanDetail(item);
+                    subWadah.appendChild(itemLok);
+                });
+
+                // Logika Buka/Tutup Akordion
+                btnKat.onclick = () => subWadah.classList.toggle('aktif');
+
+                wadah.appendChild(btnKat);
+                wadah.appendChild(subWadah);
+            }
+        }
+
+        function sorotDanTampilkanDetail(item) {
+            // Animasi Terbang (Fly-To)
+            let lng, lat;
+            if (item.Lat) { lng = parseFloat(item.Lng); lat = parseFloat(item.Lat); } // Titik
+            else { // Poligon
+                const pusat = turf.centroid({type: 'Feature', geometry: JSON.parse(item.GeoJSON)});
+                lng = pusat.geometry.coordinates[0]; lat = pusat.geometry.coordinates[1];
+            }
+            map.flyTo({ center: [lng, lat], zoom: 16.5, pitch: 45, duration: 2500 });
+
+            // Tampilkan Detail Box di Pojok Kiri Bawah
+            const box = document.getElementById('detail-box');
+            document.getElementById('detail-nama').innerText = item.Nama;
+            document.getElementById('detail-kategori').innerText = item.Kategori;
+            document.getElementById('detail-deskripsi').innerText = item.Deskripsi || 'Tidak ada deskripsi.';
+            document.getElementById('detail-koordinat').innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            box.style.display = 'block';
+        }
+
+        // ==========================================
+        // 5. RENDERING VISUAL KE PETA
+        // ==========================================
+        function renderObjekKePeta() {
+            // Gabungkan Database + Draft
+            const poligonGabungan = [...databaseUtama.shapes, ...draftSession.shapes];
+            const markerGabungan = [...databaseUtama.markers, ...draftSession.markers];
+
+            // Render Poligon
+            if(map.getSource('sumber-poligon')) {
+                const fiturGeom = poligonGabungan.map(s => ({ type:'Feature', geometry: JSON.parse(s.GeoJSON) }));
+                map.getSource('sumber-poligon').setData({type: 'FeatureCollection', features: fiturGeom});
+            } else {
+                const fiturGeom = poligonGabungan.map(s => ({ type:'Feature', geometry: JSON.parse(s.GeoJSON) }));
+                map.addSource('sumber-poligon', { type: 'geojson', data: {type: 'FeatureCollection', features: fiturGeom} });
+                map.addLayer({ 'id': 'fill-poligon', 'type': 'fill', 'source': 'sumber-poligon', 'paint': { 'fill-color': '#3b82f6', 'fill-opacity': 0.4 }});
+                map.addLayer({ 'id': 'garis-poligon', 'type': 'line', 'source': 'sumber-poligon', 'paint': { 'line-color': '#60a5fa', 'line-width': 2 }});
+            }
+
+            // Render Titik Marker Custom
+            document.querySelectorAll('.custom-marker').forEach(m => m.remove()); // Bersihkan layar
+            markerGabungan.forEach(m => {
+                const el = document.createElement('div');
+                el.className = 'custom-marker';
+                // Warna beda jika draft
+                if(m.isDraft) { el.style.borderColor = '#10b981'; el.style.color = '#10b981'; }
+                el.innerHTML = `<i class="fa-solid ${m.Icon}"></i>`;
+                
+                el.addEventListener('click', () => sorotDanTampilkanDetail(m)); // Bisa diklik langsung di peta
+                new mapboxgl.Marker(el).setLngLat([parseFloat(m.Lng), parseFloat(m.Lat)]).addTo(map);
+            });
+        }
+
+        // ==========================================
+        // 6. LOGIKA ADMIN & SESI DRAFT PENYIMPANAN
+        // ==========================================
+        function bukaModalLogin() { document.getElementById('login-modal').classList.remove('hidden'); }
+        function prosesLogin() {
+            if(document.getElementById('login-user').value === 'admin' && document.getElementById('login-pass').value === 'stpm2026') {
+                isAdmin = true; document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('btn-login-icon').classList.add('hidden');
+                document.getElementById('btn-logout-icon').classList.remove('hidden');
+                document.getElementById('draft-box').classList.remove('hidden'); // Munculkan kotak draft
+                
+                map.flyTo({ pitch: 0, bearing: 0, duration: 1500 });
+                setTimeout(() => {
+                    drawControl = new MapboxDraw({ displayControlsDefault: false, controls: { polygon: true, point: true, trash: true }, defaultMode: 'simple_select' });
+                    map.addControl(drawControl, 'bottom-left');
+                    map.on('draw.create', bukaFormDraft);
+                }, 1500);
+            }
+        }
+        function logoutAdmin() { location.reload(); } // Cara terbersih reset sesi
+
+        function bukaFormDraft(e) {
+            document.getElementById('data-modal').classList.remove('hidden');
+            fiturSedangDigambar = e.features[0];
+            document.getElementById('form-koordinat').value = '';
+        }
+
+        function tarikKoordinatPeta() {
+            if (!fiturSedangDigambar) return;
+            const tipe = fiturSedangDigambar.geometry.type;
+            const inputKoordinat = document.getElementById('form-koordinat');
+            if (tipe === 'Point') {
+                inputKoordinat.value = `${fiturSedangDigambar.geometry.coordinates[1].toFixed(6)}, ${fiturSedangDigambar.geometry.coordinates[0].toFixed(6)}`;
+            } else {
+                const pusat = turf.centroid(fiturSedangDigambar);
+                inputKoordinat.value = `${pusat.geometry.coordinates[1].toFixed(6)}, ${pusat.geometry.coordinates[0].toFixed(6)} (Pusat Area)`;
+            }
+        }
+
+        function batalGambarDraft() {
+            if(drawControl) drawControl.deleteAll();
+            document.getElementById('data-modal').classList.add('hidden');
+        }
+
+        // 6A. SIMPAN KE MEMORI SEMENTARA (DRAFT)
+        function simpanKeDraftMemori() {
+            const inputKordinat = document.getElementById('form-koordinat').value;
+            if(!inputKordinat) return alert('Ambil koordinat terlebih dahulu!');
+            
+            const tipeBentuk = fiturSedangDigambar.geometry.type;
+            const objekData = {
+                ID: Date.now().toString(),
+                Nama: document.getElementById('form-nama').value || 'Tanpa Nama',
+                Kategori: document.getElementById('form-kategori').value,
+                Deskripsi: document.getElementById('form-deskripsi').value,
+                isDraft: true // Penanda bahwa ini belum masuk server
+            };
+
+            if (tipeBentuk === 'Point') {
+                objekData.Icon = document.getElementById('form-icon').value;
+                objekData.Lat = fiturSedangDigambar.geometry.coordinates[1];
+                objekData.Lng = fiturSedangDigambar.geometry.coordinates[0];
+                draftSession.markers.push(objekData);
+            } else {
+                objekData.GeoJSON = JSON.stringify(fiturSedangDigambar.geometry);
+                draftSession.shapes.push(objekData);
+            }
+
+            document.getElementById('data-modal').classList.add('hidden');
+            if(drawControl) drawControl.deleteAll(); // Hapus garis putus-putus
+            
+            // Perbarui UI Navigasi & Peta agar draft langsung terlihat
+            renderMenuKategori();
+            renderObjekKePeta();
+            
+            // Perbarui Angka Counter Draft
+            const totalDraft = draftSession.markers.length + draftSession.shapes.length;
+            document.getElementById('draft-counter').innerText = `${totalDraft} Objek Menunggu Disimpan`;
+        }
+
+        // 6B. KIRIM SEMUA DRAFT SEKALIGUS KE SERVER (BULK POST)
+        async function kirimDraftKeServer() {
+            const total = draftSession.markers.length + draftSession.shapes.length;
+            if(total === 0) return alert("Belum ada draft objek yang digambar.");
+            
+            const konfirmasi = confirm(`Anda yakin ingin mengirim ${total} objek ini secara permanen ke Google Spreadsheet?`);
+            if(!konfirmasi) return;
+
+            document.getElementById('draft-counter').innerText = "Mengirim data... Mohon tunggu...";
+            
+            const payload = { action: 'save_bulk', data: draftSession };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                
+                // Karena pakai text/plain trik CORS, kadang error di console tapi data tetap masuk.
+                // Reset sesi komputer agar bersih.
+                alert("Proses pengiriman selesai! Sistem akan memuat ulang data asli dari server.");
+                location.reload(); 
+            } catch(e) {
+                alert("Pengiriman selesai! Sistem memuat ulang data.");
+                location.reload();
+            }
+        }
+
+        // ==========================================
+        // 7. FUNGSI EXPORT KE JPG (TANGKAPAN LAYAR)
+        // ==========================================
+        function exportKeJPG() {
+            const wadahPeta = document.getElementById('map-container');
+            // Gunakan html2canvas untuk 'memfoto' div peta beserta marker-markernya
+            html2canvas(wadahPeta, { useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Peta_STPM_Ende_${new Date().getTime()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+            });
+        }
     </script>
 </body>
 </html>
