@@ -14,6 +14,10 @@
     <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
     
+    <!-- Pustaka Tom Select (Live Search Dropdown) -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <!-- Turf.js, FontAwesome, html2canvas, pdfmake -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -35,30 +39,15 @@
 
         .glass-panel {
             background: var(--bg-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-glass); border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 10;
+            border: 1px solid var(--border-glass); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 10;
         }
 
-        /* Sidebar Kiri Utama */
-        .sidebar-main {
-            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
-            display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease;
-        }
-
-        .kategori-header {
-            background: rgba(255,255,255,0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600;
-            transition: background 0.2s; border: 1px solid transparent;
-        }
+        .sidebar-main { position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease; }
+        .kategori-header { background: rgba(255,255,255,0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.2s; border: 1px solid transparent; }
         .kategori-header:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
         .submenu-container { display: none; padding-left: 12px; margin-bottom: 15px; border-left: 2px solid rgba(255,255,255,0.1); }
         .submenu-container.aktif { display: block; animation: fadeIn 0.3s ease; }
-        
-        .lokasi-item {
-            padding: 10px 12px; margin-bottom: 6px; background: rgba(0,0,0,0.2); border-radius: 6px; 
-            cursor: pointer; display: flex; align-items: center; font-size: 0.85rem; border-left: 3px solid var(--primary-color);
-            transition: all 0.2s ease;
-        }
+        .lokasi-item { padding: 10px 12px; margin-bottom: 6px; background: rgba(0,0,0,0.2); border-radius: 6px; cursor: pointer; display: flex; align-items: center; font-size: 0.85rem; border-left: 3px solid var(--primary-color); transition: all 0.2s ease; }
         .lokasi-item:hover { background: rgba(255,255,255,0.1); transform: translateX(5px); }
         .lokasi-icon { width: 30px; text-align: center; margin-right: 10px; font-size: 1.1rem; color: #6ea8fe; }
 
@@ -66,105 +55,42 @@
         .scroll-area::-webkit-scrollbar { width: 6px; }
         .scroll-area::-webkit-scrollbar-thumb { background: #495057; border-radius: 10px; }
 
-        /* Map Mode Switcher */
-        .map-switcher {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            display: flex; background: var(--bg-glass); border-radius: 30px; padding: 5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; border: 1px solid var(--border-glass);
-        }
-        .btn-mode {
-            background: transparent; border: none; color: #adb5bd; padding: 8px 20px;
-            border-radius: 25px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease;
-        }
+        .map-switcher { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; background: var(--bg-glass); border-radius: 30px; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; border: 1px solid var(--border-glass); }
+        .btn-mode { background: transparent; border: none; color: #adb5bd; padding: 8px 20px; border-radius: 25px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
         .btn-mode.active { background: var(--primary-color); color: white; }
 
-        /* Panel Kanan Bawah (Legenda & Export Tools) */
-        .bottom-right-panel {
-            position: absolute; bottom: 20px; right: 20px; 
-            display: flex; gap: 15px; align-items: center; z-index: 10; padding: 12px 20px;
-        }
+        .bottom-right-panel { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px; align-items: center; z-index: 10; padding: 12px 20px; }
+        .detail-box { position: absolute; bottom: 20px; left: 400px; width: 320px; display: none; z-index: 10; }
 
-        /* Detail Box Melayang */
-        .detail-box {
-            position: absolute; bottom: 20px; left: 400px; width: 320px; display: none; z-index: 10;
-        }
-
-        /* Marker Kustom di Peta */
-        .custom-marker {
-            background: #212529; border: 2px solid #6ea8fe; color: #6ea8fe;
-            border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; 
-            align-items: center; font-size: 14px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-            transition: transform 0.2s;
-        }
+        .custom-marker { background: #212529; border: 2px solid #6ea8fe; color: #6ea8fe; border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; font-size: 14px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6); transition: transform 0.2s; }
         .custom-marker:hover { transform: scale(1.1); z-index: 999; }
         .marker-draft { border-color: #198754; color: #198754; }
 
-        /* =======================================================
-           EXTENDED GIS TOOLBAR (TOP RIGHT) 
-           ======================================================= */
-        .mapboxgl-ctrl-top-right {
-            z-index: 1050 !important;
-            margin-top: 15px !important;
-            margin-right: 15px !important;
-        }
-        
-        .mapboxgl-ctrl-group {
-            background-color: var(--bg-glass) !important;
-            border: 1px solid var(--border-glass) !important;
-            backdrop-filter: blur(12px) !important;
-            border-radius: 12px !important;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6) !important;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .gis-toolbar-btn {
-            background: transparent !important;
-            border: none !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-            width: 38px !important;
-            height: 38px !important;
-            color: #adb5bd !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease !important;
-            position: relative;
-        }
+        .mapboxgl-ctrl-top-right { z-index: 1050 !important; margin-top: 15px !important; margin-right: 15px !important; }
+        .mapboxgl-ctrl-group { background-color: var(--bg-glass) !important; border: 1px solid var(--border-glass) !important; backdrop-filter: blur(12px) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6) !important; display: flex; flex-direction: column; }
+        .gis-toolbar-btn { background: transparent !important; border: none !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; width: 38px !important; height: 38px !important; color: #adb5bd !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; transition: all 0.2s ease !important; position: relative; }
         .gis-toolbar-btn:last-child { border-bottom: none !important; }
         .gis-toolbar-btn:hover { background-color: rgba(255, 255, 255, 0.15) !important; color: #fff !important; }
         .gis-toolbar-btn.active-tool { background-color: var(--primary-color) !important; color: #fff !important; }
 
-        /* Tooltip Kustom */
-        .gis-toolbar-btn::after {
-            content: attr(title);
-            position: absolute;
-            right: 46px;
-            background: #111;
-            color: #fff;
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            border-radius: 4px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        .gis-toolbar-btn::after { content: attr(title); position: absolute; right: 46px; background: #111; color: #fff; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); }
         .gis-toolbar-btn:hover::after { opacity: 1; }
-
-        /* Popup Koordinat / Ukur */
-        .measure-tooltip {
-            background: rgba(0, 0, 0, 0.85); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
 
         .custom-modal-content { background: #212529; color: #f8f9fa; border: 1px solid var(--border-glass); border-radius: 16px; }
         .custom-input { background: #2b3035; border: 1px solid #495057; color: white; }
         .custom-input:focus { background: #2b3035; color: white; border-color: #0d6efd; box-shadow: none; }
+
+        /* =======================================================
+           CUSTOM CSS UNTUK TOM SELECT (LIVE SEARCH KATEGORI)
+           ======================================================= */
+        .ts-wrapper.custom-input { padding: 0; border: none; background: transparent; }
+        .ts-control { background-color: #2b3035 !important; border: 1px solid #495057 !important; color: white !important; border-radius: 6px !important; padding: 8px 12px !important; min-height: 40px; }
+        .ts-control > input { color: white !important; font-size: 0.85rem !important; }
+        .ts-dropdown { background-color: #212529 !important; border: 1px solid #495057 !important; color: white !important; border-radius: 6px !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; z-index: 3000 !important; font-size: 0.85rem; }
+        .ts-dropdown .optgroup-header { background-color: #1a1d20 !important; color: #6ea8fe !important; font-weight: bold !important; font-size: 0.75rem !important; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #2b3035; }
+        .ts-dropdown .option { color: #e4e4e7 !important; padding: 6px 12px; }
+        .ts-dropdown .option:hover, .ts-dropdown .option.active { background-color: #0d6efd !important; color: white !important; }
+        .ts-control.has-items .item { background: #0d6efd !important; color: white !important; border-radius: 4px; border: none; padding: 2px 8px; }
 
         @media (max-width: 768px) {
             .sidebar-main { width: calc(100% - 40px); bottom: auto; max-height: 45vh; }
@@ -248,12 +174,96 @@
                 <div class="modal-body">
                     <div class="mb-3"><label class="form-label small text-secondary">Nama Objek</label><input type="text" id="form-nama" class="form-control custom-input" placeholder="Misal: Aula Utama"></div>
                     <div class="mb-3"><label class="form-label small text-secondary">Kategori</label>
+
+
+
+
+
+
                         <select id="form-kategori" class="form-select custom-input">
-                            <option value="Universitas">Universitas (Area Utama)</option>
-                            <option value="Fasilitas Kampus">Fasilitas Kampus (Gedung/Ruang)</option>
-                            <option value="Halaman & Parkir">Halaman & Parkir</option>
-                            <option value="Lainnya">Lainnya</option>
+                            <optgroup label="Administrasi Pemerintahan">
+                                <option value="Provinsi">Provinsi</option>
+                                <option value="Kabupaten">Kabupaten</option>
+                                <option value="Kota">Kota</option>
+                                <option value="Kecamatan">Kecamatan</option>
+                                <option value="Kelurahan">Kelurahan</option>
+                            </optgroup>
+                            <optgroup label="Wilayah Desa dan Permukiman">
+                                <option value="Desa">Desa</option>
+                                <option value="Dusun">Dusun</option>
+                                <option value="Lingkungan">Lingkungan</option>
+                                <option value="RT">RT</option>
+                                <option value="RW">RW</option>
+                                <option value="Wilayah Administratif">Wilayah Administratif</option>
+                                <option value="Wilayah Pemerintahan">Wilayah Pemerintahan</option>
+                                <option value="Wilayah Pedesaan">Wilayah Pedesaan</option>
+                                <option value="Wilayah Perkotaan">Wilayah Perkotaan</option>
+                                <option value="Permukiman">Permukiman</option>
+                            </optgroup>
+                            <optgroup label="Penggunaan Lahan">
+                                <option value="Area Pertanian">Area Pertanian</option>
+                                <option value="Area Perkebunan">Area Perkebunan</option>
+                                <option value="Area Persawahan">Area Persawahan</option>
+                                <option value="Area Peternakan">Area Peternakan</option>
+                                <option value="Area Perikanan">Area Perikanan</option>
+                                <option value="Area Hutan">Area Hutan</option>
+                                <option value="Area Terbuka">Area Terbuka</option>
+                                <option value="Area Hijau">Area Hijau</option>
+                            </optgroup>
+                            <optgroup label="Kawasan Ekonomi">
+                                <option value="Kawasan Ekonomi">Kawasan Ekonomi</option>
+                                <option value="Kawasan Industri">Kawasan Industri</option>
+                                <option value="Kawasan Perdagangan">Kawasan Perdagangan</option>
+                                <option value="Kawasan Pariwisata">Kawasan Pariwisata</option>
+                                <option value="Kawasan Strategis">Kawasan Strategis</option>
+                            </optgroup>
+                            <optgroup label="Kawasan Sosial & Fasilitas">
+                                <option value="Kawasan Pendidikan">Kawasan Pendidikan</option>
+                                <option value="Kawasan Pemerintahan">Kawasan Pemerintahan</option>
+                                <option value="Kawasan Permukiman">Kawasan Permukiman</option>
+                                <option value="Kawasan Publik">Kawasan Publik</option>
+                                <option value="Kawasan Sosial">Kawasan Sosial</option>
+                            </optgroup>
+                            <optgroup label="Kawasan Lingkungan">
+                                <option value="Kawasan Kehutanan">Kawasan Kehutanan</option>
+                                <option value="Kawasan Lindung">Kawasan Lindung</option>
+                                <option value="Kawasan Konservasi">Kawasan Konservasi</option>
+                                <option value="Kawasan Pertanian">Kawasan Pertanian</option>
+                                <option value="Kawasan Perkebunan">Kawasan Perkebunan</option>
+                                <option value="Kawasan Peternakan">Kawasan Peternakan</option>
+                                <option value="Kawasan Perikanan">Kawasan Perikanan</option>
+                            </optgroup>
+                            <optgroup label="Kondisi Geografis">
+                                <option value="Area Pantai">Area Pantai</option>
+                                <option value="Area Pesisir">Area Pesisir</option>
+                                <option value="Area Sungai">Area Sungai</option>
+                                <option value="Area Danau">Area Danau</option>
+                                <option value="Area Pegunungan">Area Pegunungan</option>
+                                <option value="Area Perbukitan">Area Perbukitan</option>
+                                <option value="Area Lembah">Area Lembah</option>
+                            </optgroup>
+                            <optgroup label="Batas Wilayah">
+                                <option value="Batas Desa">Batas Desa</option>
+                                <option value="Batas Kecamatan">Batas Kecamatan</option>
+                                <option value="Batas Kabupaten">Batas Kabupaten</option>
+                                <option value="Batas Kota">Batas Kota</option>
+                                <option value="Batas Provinsi">Batas Provinsi</option>
+                            </optgroup>
                         </select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        
                     </div>
                     <div class="mb-3"><label class="form-label small text-secondary">Koordinat (Wajib diambil)</label>
                         <div class="input-group">
@@ -289,12 +299,22 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- LOGIKA UTAMA GIS -->
+<!-- LOGIKA UTAMA GIS -->
     <script>
+        // ==========================================
+        // KONFIGURASI GLOBAL & TOM SELECT INITIALIZATION
+        // ==========================================
         const API_URL = 'https://script.google.com/macros/s/AKfycbwbEe00oqifJUoDsk7FuidVeOHa513hO2mAIEGCuk5a09RtPersY97LuLO624RPk_g/exec';
         let isAdmin = false; let drawControl = null; let fiturSedangDigambar = null;
         let draftSession = { markers: [], shapes: [] };
         let databaseUtama = { markers: [], shapes: [] };
+        
+        // Inisiasi Picker Kategori dengan Live Search & Dynamic Add
+        let kategoriSelect = new TomSelect("#form-kategori", {
+            create: true, // FITUR MAGIC: Mengizinkan Admin mengetik kategori baru jika tidak ada di daftar!
+            sortField: false, // Mempertahankan urutan grouping yang logis
+            placeholder: "Cari atau ketik kategori baru..."
+        });
 
         const modalDataInstance = new bootstrap.Modal(document.getElementById('modalData'));
         const modalLogin = new bootstrap.Modal(document.getElementById('modalLogin'));
@@ -317,7 +337,6 @@
                 this._container = document.createElement('div');
                 this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
                 
-                // Daftar seluruh tools GIS yang diminta secara lengkap
                 const tools = [
                     { id: 'tool-identify', icon: 'fa-circle-info', title: 'Select / Identify', action: () => alert('Klik objek di peta untuk melihat detail.') },
                     { id: 'tool-marker', icon: 'fa-location-dot', title: 'Add Marker', action: () => { if(drawControl) drawControl.changeMode('draw_point'); } },
@@ -345,14 +364,11 @@
 
                 tools.forEach(t => {
                     const btn = document.createElement('button');
-                    btn.className = 'gis-toolbar-btn';
-                    btn.title = t.title;
-                    btn.innerHTML = `<i class="fa-solid ${t.icon}"></i>`;
+                    btn.className = 'gis-toolbar-btn'; btn.title = t.title; btn.innerHTML = `<i class="fa-solid ${t.icon}"></i>`;
                     btn.onclick = (e) => {
                         e.preventDefault();
                         document.querySelectorAll('.gis-toolbar-btn').forEach(b => b.classList.remove('active-tool'));
-                        btn.classList.add('active-tool');
-                        t.action();
+                        btn.classList.add('active-tool'); t.action();
                     };
                     this._container.appendChild(btn);
                 });
@@ -371,12 +387,11 @@
         });
 
         // ==========================================
-        // FUNGSI EKSPOR PDF PROFESIONAL (PDFMAKE)
+        // FUNGSI EKSPOR PDF & JPG
         // ==========================================
         function exportKePDF() {
             html2canvas(document.getElementById('map-container'), { useCORS: true }).then(canvas => {
                 const dataImage = canvas.toDataURL('image/jpeg', 0.9);
-                
                 const docDefinition = {
                     pageOrientation: 'landscape',
                     content: [
@@ -386,21 +401,23 @@
                         { text: 'Laporan Ringkasan Objek Terdaftar:', fontSize: 12, bold: true, margin: [0, 0, 0, 5] },
                         {
                             table: {
-                                headerRows: 1,
-                                widths: ['*', 'auto', 'auto'],
+                                headerRows: 1, widths: ['*', 'auto', 'auto'],
                                 body: [
-                                    ['Nama Objek / Gedung', 'Kategori', 'Status Data'],
+                                    ['Nama Objek / Gedung', 'Kategori Geografis', 'Status Data'],
                                     ...[...databaseUtama.shapes, ...databaseUtama.markers].map(i => [i.Nama, i.Kategori, 'Tersinkronisasi'])
                                 ]
                             }
                         }
                     ],
-                    footer: function(currentPage, pageCount) {
-                        return { text: `Dicetak secara otomatis melalui Web GIS STPM Ende - Halaman ${currentPage} dari ${pageCount}`, alignment: 'center', fontSize: 9, color: '#777', margin: [0, 10, 0, 0] };
-                    }
+                    footer: function(currentPage, pageCount) { return { text: `Dicetak melalui Web GIS STPM Ende - Halaman ${currentPage} dari ${pageCount}`, alignment: 'center', fontSize: 9, color: '#777', margin: [0, 10, 0, 0] }; }
                 };
-
                 pdfMake.createPdf(docDefinition).download(`GIS_STPM_Ende_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+        }
+        function exportKeJPG() {
+            html2canvas(document.getElementById('map-container'), { useCORS: true }).then(canvas => {
+                const link = document.createElement('a'); link.download = `GIS_STPM_${new Date().getTime()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
             });
         }
 
@@ -515,11 +532,12 @@
                 
                 map.flyTo({ pitch: 0, bearing: 0, duration: 1500 });
                 setTimeout(() => {
-                    drawControl = new MapboxDraw({ displayControlsDefault: false, controls: { polygon: true, point: true, trash: true }, defaultMode: 'simple_select' });
-                    map.addControl(drawControl, 'top-right');
+                    drawControl = new MapboxDraw({ displayControlsDefault: false, controls: { polygon: true, line_string: true, point: true, trash: true }, defaultMode: 'simple_select' });
+                    // Kontrol bawaan disembunyikan karena sudah di-override oleh GISExtendedToolbar
                     map.on('draw.create', (e) => {
                         fiturSedangDigambar = e.features[0];
                         document.getElementById('form-koordinat').value = '';
+                        kategoriSelect.clear(); // Reset pilihan dropdown
                         modalDataInstance.show();
                     });
                 }, 1500);
@@ -560,13 +578,6 @@
                 await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'save_bulk', data: draftSession }) });
                 alert("Penyimpanan berhasil! Layar dimuat ulang."); location.reload();
             } catch(e) { alert("Penyimpanan selesai! Layar dimuat ulang."); location.reload(); }
-        }
-
-        function exportKeJPG() {
-            html2canvas(document.getElementById('map-container'), { useCORS: true }).then(canvas => {
-                const link = document.createElement('a'); link.download = `GIS_STPM_${new Date().getTime()}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.9); link.click();
-            });
         }
     </script>
 </body>
