@@ -3,28 +3,70 @@
 // ==========================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbwbEe00oqifJUoDsk7FuidVeOHa513hO2mAIEGCuk5a09RtPersY97LuLO624RPk_g/exec';
 
-let isAdmin = false;
-let drawControl = null;
+let isAdmin = false; 
+let drawControl = null; 
 let fiturSedangDigambar = null;
 let draftSession = { markers: [], shapes: [] };
 let databaseUtama = { markers: [], shapes: [] };
 
-
+// Variabel Pengukuran (Measure)
 let isMeasuring = false;
 let measureType = 'distance'; // 'distance' atau 'area'
-let measureFeatures = []; 
-let geojsonMeasure = { type: 'FeatureCollection', features: [] };
-let measureSourceId = 'measure-source';
 
-// Inisiasi UI Frameworks
+// Inisiasi UI Frameworks (Termasuk Modal Custom Baru)
 const modalDataInstance = new bootstrap.Modal(document.getElementById('modalData'));
 const modalLogin = new bootstrap.Modal(document.getElementById('modalLogin'));
+const modalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm'));
+const modalSearch = new bootstrap.Modal(document.getElementById('modalSearch'));
+let confirmCallback = null;
 
-// Inisiasi Picker Kategori dengan Live Search & Dynamic Add
+// Inisiasi Picker Kategori dengan Live Search
 let kategoriSelect = new TomSelect("#form-kategori", {
     create: true, // Mengizinkan Admin mengetik kategori baru 
     sortField: false, 
     placeholder: "Cari atau ketik kategori baru..."
+});
+
+// ==========================================
+// 1.5. SISTEM NOTIFIKASI & KONFIRMASI KUSTOM (TOAST)
+// ==========================================
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if(!container) return; // Mencegah error jika div belum siap
+    
+    const toast = document.createElement('div');
+    toast.className = `custom-toast toast-${type}`;
+    
+    let icon = 'fa-circle-info text-primary';
+    if(type === 'success') icon = 'fa-circle-check text-success';
+    if(type === 'warning') icon = 'fa-triangle-exclamation text-warning';
+    if(type === 'danger') icon = 'fa-circle-xmark text-danger';
+
+    toast.innerHTML = `<i class="fa-solid ${icon} fs-5"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    // Hilangkan toast setelah 3.5 detik
+    setTimeout(() => {
+        toast.classList.add('hide');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3500);
+}
+
+function showConfirm(message, callback) {
+    document.getElementById('confirm-msg').innerText = message;
+    confirmCallback = callback;
+    modalConfirm.show();
+}
+
+// Menempelkan event klik pada tombol konfirmasi "Ya" (Hanya di-load setelah DOM siap)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnConfirm = document.getElementById('btn-confirm-yes');
+    if (btnConfirm) {
+        btnConfirm.addEventListener('click', () => {
+            modalConfirm.hide();
+            if(confirmCallback) confirmCallback();
+        });
+    }
 });
 
 // ==========================================
@@ -45,16 +87,9 @@ const map = new mapboxgl.Map({
 });
 
 // ==========================================
-// 3. KONTROL TOOLBAR EXTENDED GIS
+// 3. KONTROL TOOLBAR EXTENDED GIS (MODULAR)
 // ==========================================
 class GISExtendedToolbar {
-
-
-
-
-
-
-
     onAdd(map) {
         this._map = map;
         this._container = document.createElement('div');
@@ -65,25 +100,31 @@ class GISExtendedToolbar {
             // GROUP 1: Selection & Pointer
             [
                 { id: 'tool-identify', icon: 'fa-hand-pointer', title: 'Select / Identify', action: () => { map.getCanvas().style.cursor = 'default'; if(drawControl) drawControl.changeMode('simple_select'); } },
-                { id: 'tool-coord', icon: 'fa-location-crosshairs', title: 'Coordinate Picker', action: () => { toggleCoordinatePicker(); } }
+                { id: 'tool-coord', icon: 'fa-location-crosshairs', title: 'Coordinate Picker', action: () => toggleCoordinatePicker() }
             ],
-            // GROUP 2: Drawing (Admin Only)
+            // GROUP 2: Drawing (Batasi Fungsi jika bukan Admin)
             [
-                { id: 'tool-marker', icon: 'fa-map-pin', title: 'Add Marker', action: () => { if(!isAdmin) return alert('Login Admin diperlukan'); drawControl.changeMode('draw_point'); } },
-                { id: 'tool-polyline', icon: 'fa-route', title: 'Add Polyline', action: () => { if(!isAdmin) return; drawControl.changeMode('draw_line_string'); } },
-                { id: 'tool-polygon', icon: 'fa-draw-polygon', title: 'Add Polygon', action: () => { if(!isAdmin) return; drawControl.changeMode('draw_polygon'); } },
-                { id: 'tool-rect', icon: 'fa-vector-square', title: 'Create Rectangle', action: () => { if(!isAdmin) return; generateShape('rectangle'); } },
-                { id: 'tool-circle', icon: 'fa-circle-notch', title: 'Create Circle', action: () => { if(!isAdmin) return; generateShape('circle'); } }
+                { id: 'tool-marker', icon: 'fa-map-pin', title: 'Add Marker', action: () => { if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); drawControl.changeMode('draw_point'); } },
+                { id: 'tool-polyline', icon: 'fa-route', title: 'Add Polyline', action: () => { if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); drawControl.changeMode('draw_line_string'); } },
+                { id: 'tool-polygon', icon: 'fa-draw-polygon', title: 'Add Polygon', action: () => { if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); drawControl.changeMode('draw_polygon'); } },
+                { id: 'tool-rect', icon: 'fa-vector-square', title: 'Create Rectangle', action: () => { if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); generateShape('rectangle'); } },
+                { id: 'tool-circle', icon: 'fa-circle-notch', title: 'Create Circle', action: () => { if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); generateShape('circle'); } }
             ],
             // GROUP 3: Editing
             [
-                { id: 'tool-delete', icon: 'fa-trash', title: 'Delete Selected', action: () => { if(!isAdmin) return; if(confirm('Hapus objek ini dari draft?')) drawControl.trash(); } },
-                { id: 'tool-clear', icon: 'fa-eraser', title: 'Clear Selection/Draft', action: () => { if(drawControl) drawControl.deleteAll(); stopMeasurement(); } }
+                { id: 'tool-delete', icon: 'fa-trash', title: 'Delete Selected', action: () => { 
+                    if(!isAdmin) return showToast('Login Admin diperlukan', 'warning'); 
+                    showConfirm('Hapus objek ini dari draft?', () => { 
+                        drawControl.trash(); 
+                        showToast('Objek berhasil dihapus dari draft', 'success'); 
+                    }); 
+                } },
+                { id: 'tool-clear', icon: 'fa-eraser', title: 'Clear Draft/Measure', action: () => { if(drawControl) drawControl.deleteAll(); stopMeasurement(); } }
             ],
-            // GROUP 4: Measurement
+            // GROUP 4: Measurement (Bisa dipakai semua pengguna)
             [
-                { id: 'tool-meas-dist', icon: 'fa-ruler', title: 'Measure Distance', action: () => { startMeasurement('distance'); } },
-                { id: 'tool-meas-area', icon: 'fa-ruler-combined', title: 'Measure Area', action: () => { startMeasurement('area'); } }
+                { id: 'tool-meas-dist', icon: 'fa-ruler', title: 'Measure Distance', action: () => startMeasurement('distance') },
+                { id: 'tool-meas-area', icon: 'fa-ruler-combined', title: 'Measure Area', action: () => startMeasurement('area') }
             ],
             // GROUP 5: Navigation & GPS
             [
@@ -117,11 +158,6 @@ class GISExtendedToolbar {
 
         return this._container;
     }
-
-
-
-
-
     
     onRemove() { 
         this._container.parentNode.removeChild(this._container); 
@@ -138,9 +174,38 @@ map.on('load', async () => {
     if(API_URL.includes('PASTE')) {
         return document.getElementById('navigasi-container').innerHTML = '<div class="text-danger small">Masukkan API_URL Apps Script!</div>';
     }
+
+    // Inisialisasi Mapbox Draw DI AWAL agar tool Measure (Ukur) bisa langsung dipakai
+    drawControl = new MapboxDraw({ 
+        displayControlsDefault: false, 
+        controls: { polygon: true, line_string: true, point: true, trash: true }, 
+        defaultMode: 'simple_select' 
+    });
+    map.addControl(drawControl, 'bottom-right'); // Disembunyikan fiturnya di bottom right karena UI toolbar kita kustom
+    
+    // Listener saat shape digambar
+    map.on('draw.create', handleDrawCreate);
+    map.on('draw.update', calculateMeasurement);
+
     renderGedung3DBawaan();
     await ambilDataDariServer();
 });
+
+function handleDrawCreate(e) {
+    if(isMeasuring) {
+        calculateMeasurement(e);
+        return;
+    }
+    // Jika bukan mengukur, maka masuk mode admin (Data Properti Baru)
+    if(isAdmin) {
+        fiturSedangDigambar = e.features[0];
+        document.getElementById('form-koordinat').value = '';
+        kategoriSelect.clear(); 
+        modalDataInstance.show();
+    } else {
+        drawControl.deleteAll(); // Hapus jika bukan admin mencoba menggambar
+    }
+}
 
 function ubahModePeta(mode) {
     document.getElementById('btn-mode-street').classList.remove('active');
@@ -189,7 +254,7 @@ async function ambilDataDariServer() {
         // Memisahkan data dari struktur server baru
         databaseUtama.shapes = rawData.shapes || [];
         databaseUtama.markers = rawData.markers || [];
-        databaseUtama.lines = rawData.lines || []; // Mendukung polyline
+        databaseUtama.lines = rawData.lines || []; 
         
         // Render Optgroup dinamis ke TomSelect
         if(rawData.categories) {
@@ -202,7 +267,6 @@ async function ambilDataDariServer() {
                 });
             }
         }
-
         renderMenuKategori();
         renderObjekKePeta();
     } catch (err) { 
@@ -315,21 +379,9 @@ function prosesLogin() {
         document.getElementById('draft-box').classList.remove('d-none');
         
         map.flyTo({ pitch: 0, bearing: 0, duration: 1500 });
-        
-        setTimeout(() => {
-            drawControl = new MapboxDraw({ 
-                displayControlsDefault: false, 
-                controls: { polygon: true, line_string: true, point: true, trash: true }, 
-                defaultMode: 'simple_select' 
-            });
-            
-            map.on('draw.create', (e) => {
-                fiturSedangDigambar = e.features[0];
-                document.getElementById('form-koordinat').value = '';
-                kategoriSelect.clear(); 
-                modalDataInstance.show();
-            });
-        }, 1500);
+        showToast('Login berhasil. Mode Admin aktif.', 'success');
+    } else {
+        showToast('Username atau Password salah!', 'danger');
     }
 }
 
@@ -357,7 +409,7 @@ function batalGambarDraft() {
 }
 
 function simpanKeDraftMemori() {
-    if(!document.getElementById('form-koordinat').value) return alert('Ambil koordinat terlebih dahulu!');
+    if(!document.getElementById('form-koordinat').value) return showToast('Ambil koordinat terlebih dahulu!', 'warning');
     
     const obj = {
         ID: Date.now().toString(), 
@@ -383,33 +435,156 @@ function simpanKeDraftMemori() {
     renderMenuKategori(); 
     renderObjekKePeta();
     document.getElementById('draft-counter').innerText = `${draftSession.markers.length + draftSession.shapes.length} Objek Draft`;
+    showToast('Berhasil ditambahkan ke sesi Draft.', 'success');
 }
 
 async function kirimDraftKeServer() {
     const total = draftSession.markers.length + draftSession.shapes.length;
-    if(total === 0) return alert("Belum ada draft.");
-    if(!confirm(`Kirim permanen ${total} objek ini ke Google Spreadsheet?`)) return;
+    if(total === 0) return showToast("Belum ada draft untuk disimpan.", "warning");
     
-    document.getElementById('draft-counter').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim data...';
-    
-    try {
-        await fetch(API_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-            body: JSON.stringify({ action: 'save_bulk', data: draftSession }) 
-        });
-        alert("Penyimpanan berhasil! Layar dimuat ulang."); 
-        location.reload();
-    } catch(e) { 
-        alert("Penyimpanan selesai! Layar dimuat ulang."); 
-        location.reload(); 
-    }
+    showConfirm(`Kirim permanen ${total} objek ini ke Google Spreadsheet?`, async () => {
+        document.getElementById('draft-counter').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim data...';
+        
+        try {
+            await fetch(API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify({ action: 'save_bulk', data: draftSession }) 
+            });
+            showToast("Penyimpanan berhasil! Layar akan dimuat ulang.", "success"); 
+            setTimeout(() => location.reload(), 1500);
+        } catch(e) { 
+            // Fallback (Kadang fetch no-cors melempar error meskipun sukses)
+            showToast("Proses selesai! Layar akan dimuat ulang.", "success"); 
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
 }
 
 // ==========================================
-// 7. EKSPOR DOKUMEN (PDF & JPG)
+// 7. FUNGSI NYATA GIS TOOLBAR (Ukur, Cari, Geolocation)
+// ==========================================
+
+// -- A. GENERATOR SHAPE (Rectangle & Circle via Turf) --
+function generateShape(type) {
+    if(!drawControl) return;
+    const center = map.getCenter();
+    let shape;
+    if(type === 'circle') {
+        shape = turf.circle([center.lng, center.lat], 0.2, {steps: 32, units: 'kilometers'});
+    } else if (type === 'rectangle') {
+        const pt = turf.point([center.lng, center.lat]);
+        const buffered = turf.buffer(pt, 0.2, {units: 'kilometers'});
+        shape = turf.bboxPolygon(turf.bbox(buffered));
+    }
+    
+    if(shape) {
+        shape.id = Date.now().toString();
+        drawControl.add(shape);
+        showToast(`Bentuk ${type} dibuat di tengah layar. Geser kursor untuk mengedit sudutnya.`, 'success');
+    }
+}
+
+// -- B. GEOLOCATION (GPS) --
+function locateUser() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 18, pitch: 0 });
+                new mapboxgl.Marker({color: 'red'})
+                    .setLngLat([pos.coords.longitude, pos.coords.latitude])
+                    .addTo(map);
+                showToast("Lokasi Anda ditemukan.", "success");
+            },
+            (err) => showToast("Izin lokasi ditolak atau GPS tidak aktif.", "danger")
+        );
+    } else {
+        showToast("Browser Anda tidak mendukung Geolocation.", "danger");
+    }
+}
+
+// -- C. PENCARIAN OBJEK LOKAL (Modal Base) --
+function promptSearch() {
+    document.getElementById('search-input').value = '';
+    modalSearch.show();
+}
+
+function executeSearch() {
+    let q = document.getElementById('search-input').value;
+    modalSearch.hide();
+    
+    if(!q) return;
+    q = q.toLowerCase();
+    
+    const semuaData = [...databaseUtama.shapes, ...databaseUtama.markers];
+    const hasil = semuaData.find(item => item.Nama && item.Nama.toLowerCase().includes(q));
+    
+    if(hasil) {
+        sorotDanTampilkanDetail(hasil);
+        showToast(`Lokasi "${hasil.Nama}" ditemukan!`, 'success');
+    } else {
+        showToast("Objek tidak ditemukan dalam database.", "warning");
+    }
+}
+
+// -- D. COORDINATE PICKER REALTIME --
+let coordActive = false;
+function toggleCoordinatePicker() {
+    coordActive = !coordActive;
+    const overlay = document.getElementById('coord-overlay');
+    if(coordActive) {
+        overlay.classList.remove('d-none');
+        map.getCanvas().style.cursor = 'crosshair';
+        map.on('mousemove', updateCoords);
+    } else {
+        overlay.classList.add('d-none');
+        map.getCanvas().style.cursor = 'default';
+        map.off('mousemove', updateCoords);
+    }
+}
+function updateCoords(e) {
+    document.getElementById('hover-lat').innerText = e.lngLat.lat.toFixed(6);
+    document.getElementById('hover-lng').innerText = e.lngLat.lng.toFixed(6);
+}
+
+// -- E. MEASURE TOOLS (Distance & Area) --
+function startMeasurement(type) {
+    if(!drawControl) return showToast('Modul draw belum dimuat.', 'danger');
+    isMeasuring = true;
+    measureType = type;
+    
+    document.getElementById('measure-overlay').classList.remove('d-none');
+    document.getElementById('measure-text').innerText = `Ukur ${type === 'area' ? 'Luas' : 'Jarak'}... (Mulai Gambar)`;
+    
+    drawControl.changeMode(type === 'area' ? 'draw_polygon' : 'draw_line_string');
+}
+
+function calculateMeasurement(e) {
+    if(!isMeasuring) return;
+    const data = drawControl.getAll();
+    if(data.features.length > 0) {
+        const feature = data.features[data.features.length - 1]; 
+        if (measureType === 'distance' && feature.geometry.type === 'LineString') {
+            const distance = turf.length(feature, {units: 'kilometers'});
+            document.getElementById('measure-text').innerText = `Jarak: ${(distance * 1000).toFixed(2)} Meter`;
+        } else if (measureType === 'area' && feature.geometry.type === 'Polygon') {
+            const area = turf.area(feature);
+            document.getElementById('measure-text').innerText = `Luas: ${area.toFixed(2)} Meter Persegi`;
+        }
+    }
+}
+
+function stopMeasurement() {
+    isMeasuring = false;
+    document.getElementById('measure-overlay').classList.add('d-none');
+    if(drawControl && !isAdmin) drawControl.deleteAll(); // Hapus garis ukur setelah selesai bagi guest
+}
+
+// ==========================================
+// 8. EKSPOR DOKUMEN (PDF & JPG)
 // ==========================================
 function exportKePDF() {
+    showToast("Sedang mengekspor ke PDF, harap tunggu...", "info");
     html2canvas(document.getElementById('map-container'), { useCORS: true }).then(canvas => {
         const dataImage = canvas.toDataURL('image/jpeg', 0.9);
         const docDefinition = {
@@ -441,125 +616,11 @@ function exportKePDF() {
 }
 
 function exportKeJPG() {
+    showToast("Mengekspor gambar...", "info");
     html2canvas(document.getElementById('map-container'), { useCORS: true }).then(canvas => {
         const link = document.createElement('a'); 
         link.download = `GIS_STPM_${new Date().getTime()}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.9); 
         link.click();
     });
-}
-
-// ==========================================
-// 8. FUNGSI NYATA GIS TOOLBAR
-// ==========================================
-
-// -- A. GENERATOR SHAPE (Rectangle & Circle via Turf) --
-function generateShape(type) {
-    const center = map.getCenter();
-    let shape;
-    if(type === 'circle') {
-        shape = turf.circle([center.lng, center.lat], 0.2, {steps: 32, units: 'kilometers'});
-    } else if (type === 'rectangle') {
-        const pt = turf.point([center.lng, center.lat]);
-        const buffered = turf.buffer(pt, 0.2, {units: 'kilometers'});
-        shape = turf.bboxPolygon(turf.bbox(buffered));
-    }
-    
-    if(shape) {
-        shape.id = Date.now().toString();
-        drawControl.add(shape);
-        alert(`Bentuk ${type} dibuat di tengah layar. Gunakan kursor untuk memindahkan/mengedit sudutnya.`);
-    }
-}
-
-// -- B. GEOLOCATION (GPS) --
-function locateUser() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 18, pitch: 0 });
-                // Marker GPS sementara
-                new mapboxgl.Marker({color: 'red'})
-                    .setLngLat([pos.coords.longitude, pos.coords.latitude])
-                    .addTo(map);
-            },
-            (err) => alert("Izin lokasi ditolak atau GPS tidak aktif.")
-        );
-    } else {
-        alert("Browser Anda tidak mendukung Geolocation.");
-    }
-}
-
-// -- C. PENCARIAN OBJEK LOKAL --
-function promptSearch() {
-    let q = prompt("Cari Nama Gedung/Objek (Misal: Aula):");
-    if(!q) return;
-    q = q.toLowerCase();
-    
-    const semuaData = [...databaseUtama.shapes, ...databaseUtama.markers];
-    const hasil = semuaData.find(item => item.Nama && item.Nama.toLowerCase().includes(q));
-    
-    if(hasil) {
-        sorotDanTampilkanDetail(hasil);
-    } else {
-        alert("Objek tidak ditemukan dalam database.");
-    }
-}
-
-// -- D. COORDINATE PICKER REALTIME --
-let coordActive = false;
-function toggleCoordinatePicker() {
-    coordActive = !coordActive;
-    const overlay = document.getElementById('coord-overlay');
-    if(coordActive) {
-        overlay.classList.remove('d-none');
-        map.getCanvas().style.cursor = 'crosshair';
-        map.on('mousemove', updateCoords);
-    } else {
-        overlay.classList.add('d-none');
-        map.getCanvas().style.cursor = 'default';
-        map.off('mousemove', updateCoords);
-    }
-}
-function updateCoords(e) {
-    document.getElementById('hover-lat').innerText = e.lngLat.lat.toFixed(6);
-    document.getElementById('hover-lng').innerText = e.lngLat.lng.toFixed(6);
-}
-
-// -- E. MEASURE TOOLS (Distance & Area) --
-// Karena implementasi measure drawing sangat kompleks jika dibangun dari nol, 
-// kita meminjam kapabilitas 'draw_line_string' dan 'draw_polygon' dari Mapbox Draw 
-// namun di-bypass secara visual.
-function startMeasurement(type) {
-    if(!drawControl) return alert('Modul draw belum dimuat.');
-    measureType = type;
-    
-    document.getElementById('measure-overlay').classList.remove('d-none');
-    document.getElementById('measure-text').innerText = `Ukur ${type === 'area' ? 'Luas' : 'Jarak'}... (Mulai Gambar)`;
-    
-    drawControl.changeMode(type === 'area' ? 'draw_polygon' : 'draw_line_string');
-    
-    map.on('draw.create', calculateMeasurement);
-    map.on('draw.update', calculateMeasurement);
-}
-
-function calculateMeasurement(e) {
-    const data = drawControl.getAll();
-    if(data.features.length > 0) {
-        const feature = data.features[data.features.length - 1]; // Ambil yang terakhir digambar
-        if (measureType === 'distance' && feature.geometry.type === 'LineString') {
-            const distance = turf.length(feature, {units: 'kilometers'});
-            document.getElementById('measure-text').innerText = `Jarak: ${(distance * 1000).toFixed(2)} Meter`;
-        } else if (measureType === 'area' && feature.geometry.type === 'Polygon') {
-            const area = turf.area(feature);
-            document.getElementById('measure-text').innerText = `Luas: ${area.toFixed(2)} Meter Persegi`;
-        }
-    }
-}
-
-function stopMeasurement() {
-    document.getElementById('measure-overlay').classList.add('d-none');
-    map.off('draw.create', calculateMeasurement);
-    map.off('draw.update', calculateMeasurement);
-    if(drawControl && !isAdmin) drawControl.deleteAll(); // Hapus garis ukur jika bukan admin
 }

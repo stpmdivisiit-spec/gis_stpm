@@ -17,18 +17,10 @@ body {
    KOMPONEN MAP & PANEL KACA (GLASSMORPHISM)
    ======================================================= */
 #map-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;
 }
 
-#map {
-    width: 100%;
-    height: 100%;
-}
+#map { width: 100%; height: 100%; }
 
 .glass-panel {
     background: var(--bg-glass);
@@ -44,80 +36,45 @@ body {
    SIDEBAR & NAVIGASI KATEGORI
    ======================================================= */
 .sidebar-main {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    bottom: 20px;
-    width: 360px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: transform 0.3s ease;
+    position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
+    display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease;
 }
 
 .kategori-header {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-    transition: background 0.2s;
+    background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 8px;
+    margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; font-weight: 600; transition: background 0.2s;
     border: 1px solid transparent;
 }
 
 .kategori-header:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2);
 }
 
 .submenu-container {
-    display: none;
-    padding-left: 12px;
-    margin-bottom: 15px;
+    display: none; padding-left: 12px; margin-bottom: 15px;
     border-left: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-.submenu-container.aktif {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
+.submenu-container.aktif { display: block; animation: fadeIn 0.3s ease; }
 
 .lokasi-item {
-    padding: 10px 12px;
-    margin-bottom: 6px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    font-size: 0.85rem;
-    border-left: 3px solid var(--primary-color);
+    padding: 10px 12px; margin-bottom: 6px; background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center;
+    font-size: 0.85rem; border-left: 3px solid var(--primary-color);
     transition: all 0.2s ease;
 }
 
 .lokasi-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.1); transform: translateX(5px);
 }
 
 .lokasi-icon {
-    width: 30px;
-    text-align: center;
-    margin-right: 10px;
-    font-size: 1.1rem;
-    color: #6ea8fe;
+    width: 30px; text-align: center; margin-right: 10px; font-size: 1.1rem; color: #6ea8fe;
 }
 
 /* Custom Scrollbar */
-.scroll-area {
-    overflow-y: auto;
-    flex-grow: 1;
-    padding-right: 5px;
-}
+.scroll-area { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
 .scroll-area::-webkit-scrollbar { width: 6px; }
 .scroll-area::-webkit-scrollbar-thumb { background: #495057; border-radius: 10px; }
 
@@ -125,66 +82,32 @@ body {
    KONTROL PETA, MARKER, & DETAIL BOX
    ======================================================= */
 .map-switcher {
-    position: absolute;
-    bottom: 25px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    background: var(--bg-glass);
-    border-radius: 30px;
-    padding: 5px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    z-index: 10;
-    border: 1px solid var(--border-glass);
+    position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+    display: flex; background: var(--bg-glass); border-radius: 30px; padding: 5px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); z-index: 10; border: 1px solid var(--border-glass);
 }
 
 .btn-mode {
-    background: transparent;
-    border: none;
-    color: #adb5bd;
-    padding: 8px 20px;
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
+    background: transparent; border: none; color: #adb5bd; padding: 8px 20px;
+    border-radius: 25px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .btn-mode.active { background: var(--primary-color); color: white; }
 
 .bottom-right-panel {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    z-index: 10;
-    padding: 12px 20px;
+    position: absolute; bottom: 20px; right: 20px; display: flex; gap: 15px;
+    align-items: center; z-index: 10; padding: 12px 20px;
 }
 
 .detail-box {
-    position: absolute;
-    bottom: 20px;
-    left: 400px;
-    width: 320px;
-    display: none;
-    z-index: 10;
+    position: absolute; bottom: 20px; left: 400px; width: 320px; display: none; z-index: 10;
 }
 
 .custom-marker {
-    background: #212529;
-    border: 2px solid #6ea8fe;
-    color: #6ea8fe;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+    background: #212529; border: 2px solid #6ea8fe; color: #6ea8fe; border-radius: 50%;
+    width: 32px; height: 32px; display: flex; justify-content: center; align-items: center;
+    font-size: 14px; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
     transition: transform 0.2s;
 }
 
@@ -192,206 +115,144 @@ body {
 .marker-draft { border-color: #198754; color: #198754; }
 
 /* =======================================================
-   EXTENDED GIS TOOLBAR (MAPBOX OVERRIDE)
-   ======================================================= */
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* =======================================================
-   MODULAR GIS TOOLBAR (RESPONSIVE)
+   MODULAR GIS TOOLBAR (RESPONSIVE & GROUPED)
    ======================================================= */
 .mapboxgl-ctrl-top-right {
-    z-index: 1050 !important;
-    margin-top: 15px !important;
-    margin-right: 15px !important;
+    z-index: 1050 !important; margin-top: 15px !important; margin-right: 15px !important;
 }
 
 .mapboxgl-ctrl-group {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Jarak antar kelompok tools */
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    display: flex; flex-direction: column; gap: 10px; /* Jarak antar kelompok tools */
 }
 
 /* Kelompok Tools (Grup) */
 .tool-group {
-    background-color: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
+    background-color: var(--bg-glass); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); display: flex; flex-direction: column;
 }
 
 .gis-toolbar-btn {
-    background: transparent !important;
-    border: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-    width: 38px !important;
-    height: 38px !important;
-    color: #adb5bd !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    position: relative;
+    background: transparent !important; border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    width: 42px !important; height: 42px !important; color: #adb5bd !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    cursor: pointer !important; transition: all 0.2s ease !important; position: relative;
 }
 
 .gis-toolbar-btn:last-child { border-bottom: none !important; }
 .gis-toolbar-btn:hover { background-color: rgba(255, 255, 255, 0.15) !important; color: #fff !important; }
 .gis-toolbar-btn.active-tool { background-color: var(--primary-color) !important; color: #fff !important; }
 
-/* Tooltip Khusus Desktop */
-@media (min-width: 769px) {
-    .gis-toolbar-btn::after {
-        content: attr(title);
-        position: absolute; right: 46px;
-        background: #18181b; color: #fff;
-        padding: 6px 10px; font-size: 0.75rem;
-        border-radius: 6px; white-space: nowrap;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.2s ease;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .gis-toolbar-btn:hover::after { opacity: 1; }
+/* FIX TOOLTIP HOVER (Agar label terbaca dan tidak overlap) */
+.gis-toolbar-btn::after {
+    content: attr(title);
+    position: absolute; right: 50px; /* Jarak tooltip dari tombol */
+    background: #18181b; color: #f8f9fa; padding: 6px 12px; font-size: 0.75rem;
+    border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    transform: translateX(10px); /* Efek slide */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* =======================================================
-   RESPONSIVITAS MOBILE (EXPANDABLE/HORIZONTAL TOOLBAR)
-   ======================================================= */
-@media (max-width: 768px) {
-    .mapboxgl-ctrl-top-right {
-        margin: 0 !important; top: 10px !important; right: 10px !important; left: 10px !important;
-        display: flex; justify-content: flex-end;
-    }
-    
-    .mapboxgl-ctrl-group {
-        flex-direction: row; /* Berubah jadi menyamping di HP */
-        overflow-x: auto; /* Bisa di-scroll menyamping */
-        padding-bottom: 5px;
-    }
-
-    .tool-group {
-        flex-direction: row; /* Tombol di dalam grup menyamping */
-        border-right: 1px solid var(--border-glass);
-        border-bottom: none;
-    }
-
-    .gis-toolbar-btn {
-        border-bottom: none !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
+.gis-toolbar-btn:hover::after {
+    opacity: 1; visibility: visible; transform: translateX(0);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* =======================================================
    MODAL & TOM SELECT (KATEGORI PICKER)
    ======================================================= */
 .custom-modal-content {
-    background: #212529;
-    color: #f8f9fa;
-    border: 1px solid var(--border-glass);
-    border-radius: 16px;
+    background: #212529; color: #f8f9fa; border: 1px solid var(--border-glass); border-radius: 16px;
 }
 
-.custom-input {
-    background: #2b3035;
-    border: 1px solid #495057;
-    color: white;
-}
-.custom-input:focus {
-    background: #2b3035;
-    color: white;
-    border-color: #0d6efd;
-    box-shadow: none;
-}
+.custom-input { background: #2b3035; border: 1px solid #495057; color: white; }
+.custom-input:focus { background: #2b3035; color: white; border-color: #0d6efd; box-shadow: none; }
 
 /* Kustomisasi Library Tom Select agar sesuai Tema Gelap */
 .ts-wrapper.custom-input { padding: 0; border: none; background: transparent; }
 .ts-control {
-    background-color: #2b3035 !important;
-    border: 1px solid #495057 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    padding: 8px 12px !important;
-    min-height: 40px;
+    background-color: #2b3035 !important; border: 1px solid #495057 !important; color: white !important;
+    border-radius: 6px !important; padding: 8px 12px !important; min-height: 40px;
 }
 .ts-control > input { color: white !important; font-size: 0.85rem !important; }
 .ts-dropdown {
-    background-color: #212529 !important;
-    border: 1px solid #495057 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5) !important;
-    z-index: 3000 !important;
-    font-size: 0.85rem;
+    background-color: #212529 !important; border: 1px solid #495057 !important; color: white !important;
+    border-radius: 6px !important; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5) !important;
+    z-index: 3000 !important; font-size: 0.85rem;
 }
 .ts-dropdown .optgroup-header {
-    background-color: #1a1d20 !important;
-    color: #6ea8fe !important;
-    font-weight: bold !important;
-    font-size: 0.75rem !important;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #2b3035;
+    background-color: #1a1d20 !important; color: #6ea8fe !important; font-weight: bold !important;
+    font-size: 0.75rem !important; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #2b3035;
 }
 .ts-dropdown .option { color: #e4e4e7 !important; padding: 6px 12px; }
-.ts-dropdown .option:hover, .ts-dropdown .option.active {
-    background-color: #0d6efd !important;
-    color: white !important;
-}
-.ts-control.has-items .item {
-    background: #0d6efd !important;
-    color: white !important;
-    border-radius: 4px;
-    border: none;
-    padding: 2px 8px;
-}
+.ts-dropdown .option:hover, .ts-dropdown .option.active { background-color: #0d6efd !important; color: white !important; }
+.ts-control.has-items .item { background: #0d6efd !important; color: white !important; border-radius: 4px; border: none; padding: 2px 8px; }
 
 /* =======================================================
-   RESPONSIVITAS MOBILE & ANIMASI
+   RESPONSIVITAS MOBILE (HORIZONTAL TOOLBAR)
    ======================================================= */
 @media (max-width: 768px) {
     .sidebar-main { width: calc(100% - 40px); bottom: auto; max-height: 45vh; }
     .detail-box { left: 20px; bottom: 80px; width: calc(100% - 40px); }
     .bottom-right-panel { right: 20px; bottom: 80px; flex-direction: column; align-items: flex-end; }
     .map-switcher { bottom: 20px; }
-    .mapboxgl-ctrl-top-right { margin-top: 50vh !important; }
+    
+    .mapboxgl-ctrl-top-right {
+        margin: 0 !important; top: 10px !important; right: 10px !important; left: 10px !important;
+        display: flex; justify-content: flex-end;
+    }
+    .mapboxgl-ctrl-group {
+        flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 8px;
+    }
+    .tool-group {
+        flex-direction: row; border-right: 1px solid var(--border-glass); border-bottom: none; flex-shrink: 0;
+    }
+    .gis-toolbar-btn {
+        border-bottom: none !important; border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    .gis-toolbar-btn::after { display: none; } /* Hilangkan tooltip di Mobile */
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* =======================================================
+   CUSTOM TOAST NOTIFICATION & MODALS
+   ======================================================= */
+.custom-toast {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    animation: slideDownToast 0.4s ease forwards;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Warna Varian Toast */
+.toast-success { border-left: 4px solid #198754; }
+.toast-warning { border-left: 4px solid #ffc107; }
+.toast-danger { border-left: 4px solid #dc3545; }
+.toast-info { border-left: 4px solid #0d6efd; }
+
+.custom-toast.hide { animation: fadeOutToast 0.4s ease forwards; }
+
+@keyframes slideDownToast {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOutToast {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
 }
