@@ -3,35 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Informasi Geografis - STPM Santa Ursula Ende</title>
+    <title>Sistem Informasi Geografis - Tata Ruang Wilayah</title>
     
-    <!-- 1. Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- 2. Mapbox GL JS & Mapbox Draw -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" rel="stylesheet" />
-    
-    <!-- 3. Tom Select (Live Search Dropdown) -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-
-    <!-- 4. Pustaka Pendukung (Turf, FontAwesome, Export Tools) -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
-    <!-- MEMANGGIL FILE CSS KUSTOM -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- WADAH TOAST NOTIFICATION -->
+
+    <!-- SPLASH SCREEN / LANDING PAGE -->
+    <div id="landing-splash" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background: rgba(18, 18, 18, 0.85); backdrop-filter: blur(10px); z-index: 9999; transition: opacity 0.5s ease;">
+        <div class="text-center text-light px-4" style="max-width: 650px;">
+            <i class="fa-solid fa-earth-asia text-primary mb-4" style="font-size: 5rem; filter: drop-shadow(0 0 15px rgba(13,110,253,0.5));"></i>
+            <h1 class="fw-bold mb-3">Portal GIS Terpadu</h1>
+            <p class="mb-4 text-secondary" style="font-size: 1.1rem;">
+                Selamat datang di Sistem Informasi Geografis Tata Ruang. Anda dapat menjelajahi batas wilayah, lokasi infrastruktur, dan tata kota secara interaktif. 
+            </p>
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
+                <button class="btn btn-primary px-4 py-2 fw-bold shadow-lg" onclick="closeLandingSplash()"><i class="fa-solid fa-map-location-dot me-2"></i> Mulai Jelajahi Peta</button>
+                <button class="btn btn-outline-light px-4 py-2 fw-bold" onclick="closeLandingSplash(); modalLogin.show();"><i class="fa-solid fa-user-lock me-2"></i> Login Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
     <div id="toast-container" class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100; top: 10px !important;"></div>
 
-    <!-- MODAL CONFIRM CUSTOM (Pengganti confirm bawaan) -->
+    <!-- MODAL CONFIRM -->
     <div class="modal fade" id="modalConfirm" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content custom-modal-content border-secondary">
@@ -47,7 +54,7 @@
         </div>
     </div>
 
-    <!-- MODAL PENCARIAN CUSTOM (Pengganti prompt bawaan) -->
+    <!-- MODAL SEARCH -->
     <div class="modal fade" id="modalSearch" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content custom-modal-content border-secondary">
@@ -56,41 +63,43 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-3">
-                    <input type="text" id="search-input" class="form-control custom-input mb-3" placeholder="Misal: Aula...">
+                    <input type="text" id="search-input" class="form-control custom-input mb-3" placeholder="Misal: Kantor Desa...">
                     <button class="btn btn-primary w-100" onclick="executeSearch()">Cari</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Area Peta -->
+
     <div id="map-container"><div id="map"></div></div>
 
     <!-- SIDEBAR KIRI -->
     <div class="sidebar-main glass-panel p-3 p-md-4">
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
-            <h5 class="m-0 fw-bold"><i class="fa-solid fa-earth-asia me-2 text-primary"></i> GIS STPM Ende</h5>
+            <h5 class="m-0 fw-bold"><i class="fa-solid fa-map text-primary"></i> Portal Peta</h5>
             <div>
-                <button id="btn-login" class="btn btn-sm btn-outline-secondary border-0" onclick="modalLogin.show()" title="Login Admin"><i class="fa-solid fa-user-lock"></i></button>
-                <button id="btn-logout" class="btn btn-sm btn-outline-danger border-0 d-none" onclick="logoutAdmin()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+                <button id="btn-login" class="btn btn-sm btn-primary shadow-sm fw-bold" onclick="modalLogin.show()" title="Login Admin"><i class="fa-solid fa-user-lock"></i> Login</button>
+                <button id="btn-logout" class="btn btn-sm btn-danger shadow-sm fw-bold d-none" onclick="logoutAdmin()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
             </div>
         </div>
         
-        <p class="text-secondary small mb-3">Pilih Kategori Objek untuk navigasi.</p>
+        <div id="public-welcome-text" class="mb-3 p-2 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-light" style="font-size: 0.8rem;">
+            <i class="fa-solid fa-circle-info text-primary me-1"></i> Anda dalam mode <b>Pengunjung</b>. Alat menggambar peta dikunci. Silakan login untuk mengedit data GIS.
+        </div>
 
-        <!-- Kotak Draft Admin -->
         <div id="draft-box" class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 text-light d-none p-3 mb-3 shadow-sm">
-            <h6 class="text-success fw-bold"><i class="fa-solid fa-pen-ruler me-1"></i> Mode Draft Aktif</h6>
-            <p class="small mb-2">Gunakan Extended GIS Toolbar di Kanan Atas.</p>
-            <div id="draft-counter" class="fw-bold text-center mb-2">0 Objek Draft</div>
-            <button class="btn btn-success w-100 btn-sm shadow" onclick="kirimDraftKeServer()"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Simpan Semua</button>
+            <h6 class="text-success fw-bold"><i class="fa-solid fa-pen-ruler me-1"></i> Mode Admin Aktif</h6>
+            <p class="small mb-2" style="font-size:0.75rem;">Alat gambar di pojok kanan atas telah dibuka.</p>
+            <div id="draft-counter" class="fw-bold text-center mb-2 bg-dark rounded p-1">0 Objek Draft</div>
+            <button class="btn btn-success w-100 btn-sm shadow" onclick="kirimDraftKeServer()"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Simpan Permanen</button>
         </div>
         
+        <p class="text-secondary small mb-2 fw-bold">Navigasi Kategori:</p>
         <div id="navigasi-container" class="scroll-area">
-            <div class="text-secondary fst-italic small"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Menghubungkan ke server...</div>
+            <div class="text-secondary fst-italic small"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Memuat database peta...</div>
         </div>
     </div>
 
-    <!-- OVERLAY INFORMASI & PENGUKURAN REAL-TIME -->
+    <!-- MEASUREMENT & COORD TOOLS -->
     <div id="measure-overlay" class="glass-panel p-2 d-none" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; text-align: center;">
         <span id="measure-text" class="fw-bold text-warning small">Mode Ukur Aktif: 0 Meter</span>
         <button class="btn btn-sm btn-danger py-0 px-2 ms-2" onclick="stopMeasurement()">X</button>
@@ -105,24 +114,39 @@
         <button class="btn-mode" id="btn-mode-satellite" onclick="ubahModePeta('satellite')">Satellite Hybrid</button>
     </div>
 
-    <!-- DETAIL BOX -->
-    <div id="detail-box" class="glass-panel p-3 detail-box">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 id="detail-nama" class="text-primary fw-bold m-0">Nama Objek</h5>
-            <button class="btn-close btn-close-white" style="font-size:0.7rem;" onclick="document.getElementById('detail-box').style.display='none'"></button>
+    <!-- DETAIL INFORMATION PANEL (ADVANCED) -->
+    <div id="detail-box" class="glass-panel p-3 detail-box shadow-lg border-primary border-opacity-50">
+        <div class="d-flex justify-content-between align-items-start mb-2 border-bottom border-secondary pb-2">
+            <div style="max-width: 85%;">
+                <h5 id="detail-nama" class="text-primary fw-bold m-0 text-truncate">Nama Objek</h5>
+                <span id="detail-kategori" class="badge bg-secondary mt-1">Kategori</span>
+                <span id="detail-status" class="badge bg-success mt-1 ms-1">Status</span>
+            </div>
+            <button class="btn-close btn-close-white" style="font-size:0.75rem;" onclick="document.getElementById('detail-box').style.display='none'"></button>
         </div>
-        <span id="detail-kategori" class="badge bg-secondary mb-2">Kategori</span>
-        <p id="detail-deskripsi" class="small text-light opacity-75 mb-3" style="max-height:80px; overflow-y:auto;">Deskripsi...</p>
-        <div class="border-top border-secondary pt-2 small text-secondary">
-            <i class="fa-solid fa-location-crosshairs me-1"></i> <span id="detail-koordinat">Menghitung...</span>
+        
+        <div class="detail-body small text-light mb-3" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+            <div class="mb-1 text-secondary" style="font-size:0.7rem;">ID Objek: <span id="detail-id" class="text-light font-monospace"></span></div>
+            <div class="mb-2 mt-2"><i class="fa-solid fa-align-left text-primary me-2"></i><span id="detail-deskripsi" class="opacity-75">Deskripsi akan tampil di sini...</span></div>
+            
+            <div id="detail-geom-info" class="p-2 mb-2 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-50"></div>
+            
+            <div class="mb-1"><i class="fa-solid fa-location-crosshairs text-primary me-2"></i><span id="detail-koordinat">Menghitung koordinat...</span></div>
+            <div class="mb-1"><i class="fa-solid fa-clock text-primary me-2"></i>Sinkronisasi: <span id="detail-timestamp"></span></div>
+        </div>
+        
+        <div class="d-flex gap-2 border-top border-secondary pt-3 mt-auto">
+            <button class="btn btn-sm btn-outline-info flex-grow-1 fw-bold shadow-sm" id="btn-zoom-obj" title="Fokus ke Objek"><i class="fa-solid fa-magnifying-glass-plus"></i> Fokus</button>
+            <button class="btn btn-sm btn-outline-warning flex-grow-1 fw-bold admin-only-tool d-none shadow-sm" id="btn-edit-obj" title="Edit Data Objek"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+            <button class="btn btn-sm btn-danger flex-grow-1 fw-bold admin-only-tool d-none shadow-sm" id="btn-delete-obj" title="Hapus Permanen Objek"><i class="fa-solid fa-trash"></i> Hapus</button>
         </div>
     </div>
 
-    <!-- PANEL KANAN BAWAH (Legenda & Export) -->
+    <!-- PANEL KANAN BAWAH -->
     <div class="bottom-right-panel glass-panel">
         <div class="pe-3 border-end border-secondary small">
             <div class="fw-bold mb-1">Legenda Peta</div>
-            <div class="d-flex align-items-center mb-1"><i class="fa-solid fa-square me-2" style="color:rgba(13, 110, 253, 0.5);"></i> Area / Bangunan</div>
+            <div class="d-flex align-items-center mb-1"><i class="fa-solid fa-square me-2" style="color:rgba(13, 110, 253, 0.5);"></i> Area / Poligon</div>
             <div class="d-flex align-items-center"><i class="fa-solid fa-location-dot me-2 text-primary"></i> Titik Lokasi</div>
         </div>
         <div class="d-flex gap-2">
@@ -139,11 +163,10 @@
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Data Properti Baru</h5>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3"><label class="form-label small text-secondary">Nama Objek</label><input type="text" id="form-nama" class="form-control custom-input" placeholder="Misal: Aula Utama"></div>
+                    <div class="mb-3"><label class="form-label small text-secondary">Nama Objek</label><input type="text" id="form-nama" class="form-control custom-input" placeholder="Misal: Kantor Desa / Lahan Tani"></div>
                     <div class="mb-3">
                         <label class="form-label small text-secondary">Kategori</label>
                         <select id="form-kategori" class="form-select custom-input" placeholder="Cari atau ketik kategori baru..."></select>
-                        <small class="text-secondary" style="font-size:0.7rem;">*Data diload dinamis dari server</small>
                     </div>
                     <div class="mb-3"><label class="form-label small text-secondary">Koordinat (Wajib diambil)</label>
                         <div class="input-group">
@@ -151,25 +174,15 @@
                             <button class="btn btn-primary px-3" type="button" onclick="tarikKoordinatPeta()">Ambil</button>
                         </div>
                     </div>
-                    <div class="mb-3"><label class="form-label small text-secondary">Deskripsi</label><textarea id="form-deskripsi" class="form-control custom-input" rows="2" placeholder="Keterangan detail..."></textarea></div>
-
-
-
+                    <div class="mb-3"><label class="form-label small text-secondary">Deskripsi</label><textarea id="form-deskripsi" class="form-control custom-input" rows="2" placeholder="Keterangan detail / demografi..."></textarea></div>
                     <div class="mb-3">
                         <label class="form-label small text-secondary">Ikon Penanda (Visual Picker)</label>
-                        <select id="form-icon" class="form-select custom-input" placeholder="Cari ikon (Misal: parkir, toilet)..."></select>
+                        <select id="form-icon" class="form-select custom-input" placeholder="Cari ikon..."></select>
                     </div>
-
-
-
-
-
-
-
                 </div>
                 <div class="modal-footer border-secondary justify-content-between">
                     <button type="button" class="btn btn-outline-danger" onclick="batalGambarDraft()">Batal</button>
-                    <button type="button" class="btn btn-success shadow" onclick="simpanKeDraftMemori()"><i class="fa-solid fa-box-archive me-1"></i> Simpan ke Draft</button>
+                    <button type="button" class="btn btn-success shadow" onclick="simpanKeDraftMemori()"><i class="fa-solid fa-box-archive me-1"></i> Simpan Draft</button>
                 </div>
             </div>
         </div>
@@ -179,21 +192,18 @@
     <div class="modal fade" id="modalLogin" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content custom-modal-content">
-                <div class="modal-header border-secondary p-3"><h6 class="modal-title fw-bold">Akses Admin</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-secondary p-3"><h6 class="modal-title fw-bold">Akses Admin GIS</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-3">
                     <input type="text" id="login-user" class="form-control custom-input mb-2" placeholder="Username">
                     <input type="password" id="login-pass" class="form-control custom-input mb-3" placeholder="Password">
-                    <button class="btn btn-primary w-100" onclick="prosesLogin()">Masuk</button>
+                    <button class="btn btn-primary w-100 fw-bold" onclick="prosesLogin()">Masuk</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Pustaka JS UI Framework (Bootstrap & Tom Select) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-
-    <!-- MEMANGGIL FILE JAVASCRIPT KUSTOM -->
     <script src="script.js"></script>
 </body>
 </html>
