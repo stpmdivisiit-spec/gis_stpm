@@ -20,12 +20,109 @@ const modalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm')
 const modalSearch = new bootstrap.Modal(document.getElementById('modalSearch'));
 let confirmCallback = null;
 
-// Inisiasi Picker Kategori dengan Live Search
+
+
+
+// Data Master Default Kategori GIS (Lengkap & Terstruktur)
+const defaultCategories = {
+    "Administrasi Pemerintahan": [
+        "Kantor Bupati/Wali Kota", "Kantor Camat", "Kantor Kepala Desa", "Balai Desa", 
+        "Kantor Dinas/Instansi", "Polsek/Pos Polisi", "Koramil", "Posyandu", "Puskesmas"
+    ],
+    "Batas Wilayah & Tata Ruang": [
+        "Batas Kabupaten/Kota", "Batas Kecamatan", "Batas Desa/Kelurahan", 
+        "Batas Dusun", "Batas Lingkungan/RW", "Batas RT", "Wilayah Adat / Ulayat", 
+        "Hutan Lindung", "Hutan Produksi", "Area Konservasi"
+    ],
+    "Penggunaan Lahan & Ekonomi": [
+        "Lahan Pertanian", "Area Persawahan", "Ladang / Tegalan", "Area Perkebunan", 
+        "Area Peternakan", "Area Perikanan / Tambak", "Pasar Tradisional", 
+        "Pusat Perdagangan", "Kawasan Industri", "UMKM / Sentra Produksi"
+    ],
+    "Sosial, Budaya & Kependudukan": [
+        "Permukiman Padat Penduduk", "Permukiman Reguler", "Rumah Adat / Bale", 
+        "Tempat Ibadah", "Pemakaman Umum", "Situs Sejarah / Budaya", 
+        "Wilayah Komunitas / Suku Tertentu", "Area Rawan Bencana"
+    ],
+    "Infrastruktur & Fasilitas Umum": [
+        "Jalan Raya / Nasional", "Jalan Desa", "Jembatan", "Pelabuhan / Dermaga", 
+        "Terminal / Halte", "Fasilitas Pendidikan (SD/SMP/SMA)", "Fasilitas Kesehatan", 
+        "Sumber Air Bersih", "Saluran Irigasi / Sungai", "Menara Telekomunikasi / BTS", "Fasilitas Listrik / Gardu"
+    ]
+};
+
+// Data Master Ikon FontAwesome dengan Keterangan
+// Data Master Ikon FontAwesome dengan Keterangan (Relevan untuk Wilayah)
+const iconList = [
+    { class: 'fa-location-dot', name: 'Titik Lokasi (Default)', desc: 'Penanda lokasi standar' },
+    { class: 'fa-building-columns', name: 'Kantor Pemerintahan', desc: 'Balai Desa, Kantor Camat, Bupati' },
+    { class: 'fa-house-flag', name: 'Rumah Adat / Balai', desc: 'Fasilitas adat, balai pertemuan warga' },
+    { class: 'fa-map-location-dot', name: 'Batas Wilayah / Adat', desc: 'Penanda zona, batas desa, ulayat' },
+    { class: 'fa-wheat-awn', name: 'Pertanian / Sawah', desc: 'Area persawahan, ladang, panen' },
+    { class: 'fa-seedling', name: 'Perkebunan', desc: 'Lahan perkebunan, area hijau, bibit' },
+    { class: 'fa-cow', name: 'Peternakan', desc: 'Kawasan kandang, peternakan warga' },
+    { class: 'fa-fish-fins', name: 'Perikanan / Tambak', desc: 'Area budidaya ikan, nelayan, pesisir' },
+    { class: 'fa-tree', name: 'Hutan / Ruang Terbuka', desc: 'Hutan lindung, area konservasi, taman' },
+    { class: 'fa-water', name: 'Sumber Air / Sungai', desc: 'Mata air, irigasi, sungai, danau' },
+    { class: 'fa-users', name: 'Demografi / Penduduk', desc: 'Kepadatan penduduk, wilayah komunitas' },
+    { class: 'fa-house', name: 'Permukiman Warga', desc: 'Area perumahan, rumah warga' },
+    { class: 'fa-shop', name: 'Pasar / Ekonomi', desc: 'Pasar desa, toko, sentra ekonomi UMKM' },
+    { class: 'fa-road', name: 'Jalan Raya / Akses', desc: 'Infrastruktur jalan raya, jalan desa' },
+    { class: 'fa-bridge-water', name: 'Jembatan', desc: 'Infrastruktur penghubung, jembatan' },
+    { class: 'fa-house-medical', name: 'Fasilitas Kesehatan', desc: 'Puskesmas, Posyandu, Klinik desa' },
+    { class: 'fa-school', name: 'Fasilitas Pendidikan', desc: 'Sekolah (PAUD, SD, SMP, SMA), Pesantren' },
+    { class: 'fa-place-of-worship', name: 'Tempat Ibadah', desc: 'Ikon umum tempat ibadah agama' },
+    { class: 'fa-monument', name: 'Situs Budaya', desc: 'Monumen, peninggalan sejarah, makam' },
+    { class: 'fa-tower-cell', name: 'Menara / BTS', desc: 'Infrastruktur telekomunikasi desa' },
+    { class: 'fa-bolt', name: 'Fasilitas Listrik', desc: 'Gardu listrik, penerangan jalan' },
+    { class: 'fa-triangle-exclamation', name: 'Rawan Bencana', desc: 'Titik longsor, banjir, zona bahaya' }
+];
+
+// Inisiasi Picker Kategori dengan Live Search & Dynamic Add
 let kategoriSelect = new TomSelect("#form-kategori", {
-    create: true, // Mengizinkan Admin mengetik kategori baru 
+    create: true, // Mengizinkan Admin mengetik kategori baru secara fleksibel
     sortField: false, 
     placeholder: "Cari atau ketik kategori baru..."
 });
+
+// Inisiasi Visual Icon Picker
+let iconSelect = new TomSelect("#form-icon", {
+    valueField: 'class',
+    labelField: 'name',
+    searchField: ['name', 'class', 'desc'],
+    options: iconList,
+    create: true, // Admin tetap bisa ngetik class manual misal 'fa-star' jika ikon tidak ada di list
+    render: {
+        // Tampilan list dropdown
+        option: function(data, escape) {
+            return `<div class="d-flex align-items-center p-2 border-bottom border-secondary border-opacity-25">
+                        <div class="fs-3 text-primary me-3 text-center" style="width: 40px;">
+                            <i class="fa-solid ${escape(data.class)}"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-light">${escape(data.name)}</div>
+                            <div class="small text-secondary" style="font-size:0.75rem;">${escape(data.desc || 'Ikon kustom')} | <code>${escape(data.class)}</code></div>
+                        </div>
+                    </div>`;
+        },
+        // Tampilan setelah ikon dipilih
+        item: function(data, escape) {
+            return `<div class="d-flex align-items-center fw-bold">
+                        <i class="fa-solid ${escape(data.class)} me-2 text-primary fs-5"></i> ${escape(data.name)}
+                    </div>`;
+        }
+    }
+});
+// Set default icon
+iconSelect.setValue('fa-location-dot');
+
+
+
+
+
+
+
+
 
 // ==========================================
 // 1.5. SISTEM NOTIFIKASI & KONFIRMASI KUSTOM (TOAST)
@@ -256,21 +353,34 @@ async function ambilDataDariServer() {
         databaseUtama.markers = rawData.markers || [];
         databaseUtama.lines = rawData.lines || []; 
         
-        // Render Optgroup dinamis ke TomSelect
+        // Reset Kategori sebelum digabung
+        kategoriSelect.clearOptions();
+        kategoriSelect.clearOptionGroups();
+
+        // 1. Masukkan Default Kategori (Bawaan Sistem)
+        for (const [groupName, catArray] of Object.entries(defaultCategories)) {
+            kategoriSelect.addOptionGroup(groupName, {label: groupName});
+            catArray.forEach(cat => {
+                kategoriSelect.addOption({value: cat, text: cat, optgroup: groupName});
+            });
+        }
+
+        // 2. Gabungkan/Merge Kategori Baru dari Google Spreadsheet (Server)
         if(rawData.categories) {
-            kategoriSelect.clearOptions();
-            kategoriSelect.clearOptionGroups();
             for (const [groupName, catArray] of Object.entries(rawData.categories)) {
-                kategoriSelect.addOptionGroup(groupName, {label: groupName});
+                // Tambah grup jika belum ada di default
+                kategoriSelect.addOptionGroup(groupName, {label: groupName}); 
                 catArray.forEach(cat => {
+                    // Mencegah duplikasi: addOption otomatis menimpa jika value sama
                     kategoriSelect.addOption({value: cat, text: cat, optgroup: groupName});
                 });
             }
         }
+
         renderMenuKategori();
         renderObjekKePeta();
     } catch (err) { 
-        document.getElementById('navigasi-container').innerHTML = '<span class="text-danger small">Gagal memuat data dari Spreadsheet. Pastikan Apps Script aktif.</span>'; 
+        showToast("Gagal memuat data dari Spreadsheet. Pastikan koneksi internet stabil.", "danger"); 
     }
 }
 
@@ -446,15 +556,15 @@ async function kirimDraftKeServer() {
         document.getElementById('draft-counter').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim data...';
         
         try {
+            // Hilangkan header Content-Type agar menghindari preflight blokir dari browser
             await fetch(API_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                 body: JSON.stringify({ action: 'save_bulk', data: draftSession }) 
             });
+            
             showToast("Penyimpanan berhasil! Layar akan dimuat ulang.", "success"); 
             setTimeout(() => location.reload(), 1500);
         } catch(e) { 
-            // Fallback (Kadang fetch no-cors melempar error meskipun sukses)
             showToast("Proses selesai! Layar akan dimuat ulang.", "success"); 
             setTimeout(() => location.reload(), 1500);
         }
@@ -591,7 +701,7 @@ function exportKePDF() {
             pageOrientation: 'landscape',
             content: [
                 { text: 'SISTEM INFORMASI GEOGRAFIS (GIS)', fontSize: 18, bold: true, color: '#0d6efd', alignment: 'center' },
-                { text: 'Kampus STPM Santa Ursula Ende - Flores NTT', fontSize: 12, italics: true, alignment: 'center', margin: [0, 0, 0, 15] },
+                { text: 'GIS STPM Santa Ursula', fontSize: 12, italics: true, alignment: 'center', margin: [0, 0, 0, 15] },
                 { image: dataImage, width: 750, alignment: 'center', margin: [0, 0, 0, 15] },
                 { text: 'Laporan Ringkasan Objek Terdaftar:', fontSize: 12, bold: true, margin: [0, 0, 0, 5] },
                 {
